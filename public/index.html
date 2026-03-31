@@ -512,23 +512,34 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 // ══════════════════════════════════════
 const HOY = () => new Date().toISOString().slice(0,10);
 
+// stockMin = consumo semanal real (calculado de 8 días de ventas, mar 2026)
+// Carne: 44kg/sem · Pollo: 6.8kg/sem · Bollos: 392/sem · Papa: 44kg/sem
+// Camote: 2kg/sem · Tocino: 4.3kg/sem · Q.Americano: 346/sem · Q.Suizo: 147/sem
 const DEFAULT_INSUMOS = [
-  {id:'ins_001',nombre:'Carne molida de res',unidad:'g',stock:0,stockMin:2000,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_002',nombre:'Bollo de hamburguesa',unidad:'pza',stock:0,stockMin:50,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_003',nombre:'Queso americano',unidad:'rebanada',stock:0,stockMin:50,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_004',nombre:'Queso suizo',unidad:'rebanada',stock:0,stockMin:30,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_005',nombre:'Pechuga de pollo',unidad:'pza',stock:0,stockMin:20,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_006',nombre:'Papa',unidad:'g',stock:0,stockMin:5000,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_007',nombre:'Mayonesa',unidad:'ml',stock:0,stockMin:1000,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_008',nombre:'Sriracha',unidad:'ml',stock:0,stockMin:500,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_009',nombre:'Sal',unidad:'g',stock:0,stockMin:500,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_010',nombre:'Pimienta negra',unidad:'g',stock:0,stockMin:200,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_011',nombre:'Tocino',unidad:'g',stock:0,stockMin:1000,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
-  {id:'ins_012',nombre:'Aceite vegetal',unidad:'ml',stock:0,stockMin:3000,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[
-    {id:'prov_001',nombre:"Costco",precio:0,unidadCompra:'bidón',actualizacion:HOY()},
-    {id:'prov_002',nombre:"Sam's Club",precio:0,unidadCompra:'bidón',actualizacion:HOY()},
+  {id:'ins_001',nombre:'Carne molida de res',   unidad:'g',      stock:0, stockMin:44000, costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+    {id:'prov_c01',nombre:'Alma Alexis',precio:0,unidadCompra:'kg',actualizacion:HOY()},
   ]},
-  {id:'ins_013',nombre:'Bastones de camote',unidad:'g',stock:0,stockMin:2000,costo:0,ultimaRevisionPrecio:HOY(),proveedores:[]},
+  {id:'ins_002',nombre:'Bollo de hamburguesa',  unidad:'pza',    stock:0, stockMin:400,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_003',nombre:'Queso americano',        unidad:'rebanada',stock:0,stockMin:350,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+    {id:'prov_q01',nombre:'Kirkland (Costco)',precio:0,unidadCompra:'paquete',actualizacion:HOY()},
+  ]},
+  {id:'ins_004',nombre:'Queso suizo',            unidad:'rebanada',stock:0,stockMin:150,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+    {id:'prov_q02',nombre:'Kirkland (Costco)',precio:0,unidadCompra:'paquete',actualizacion:HOY()},
+  ]},
+  {id:'ins_005',nombre:'Pechuga de pollo',       unidad:'g',      stock:0, stockMin:7000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_006',nombre:'Papa',                   unidad:'g',      stock:0, stockMin:44000, costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+    {id:'prov_p01',nombre:'Oscar Caballero',precio:0,unidadCompra:'costal',actualizacion:HOY()},
+  ]},
+  {id:'ins_007',nombre:'Mayonesa',               unidad:'ml',     stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_008',nombre:'Sriracha',               unidad:'ml',     stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_009',nombre:'Sal',                    unidad:'g',      stock:0, stockMin:1000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_010',nombre:'Pimienta negra',         unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_011',nombre:'Tocino',                 unidad:'g',      stock:0, stockMin:4300,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_012',nombre:'Aceite vegetal',         unidad:'ml',     stock:0, stockMin:5000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+    {id:'prov_a01',nombre:'Costco',precio:0,unidadCompra:'bidón',actualizacion:HOY()},
+    {id:'prov_a02',nombre:"Sam's Club",precio:0,unidadCompra:'bidón',actualizacion:HOY()},
+  ]},
+  {id:'ins_013',nombre:'Bastones de camote',     unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
 ];
 
 // Gramajes según recetario estandarizado Instinto:
