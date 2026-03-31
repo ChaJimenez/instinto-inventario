@@ -187,6 +187,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .nota-confirm-table input[type=number]:focus{border-color:#0D2A5E;}
 .nota-match{font-size:11px;color:#3b6d11;background:#eaf3de;border-radius:10px;padding:1px 7px;margin-left:4px;}
 .nota-nomatch{font-size:11px;color:#b06800;background:#fff8ed;border-radius:10px;padding:1px 7px;margin-left:4px;}
+/* ── DROP ZONE drag-over ── */
+.nota-drop.drag-over{border-color:#0D2A5E;background:#f0f4ff;}
 /* ── EMPTY STATE ── */
 .empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px;}
 /* ── STAT MINI ── */
@@ -264,6 +266,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn-corte" onclick="abrirCorte()">📅 Corte del Día</button>
+      <button class="btn btn-danger btn-sm" onclick="abrirMerma()">🗑 Merma</button>
+      <button class="btn btn-outline btn-sm" onclick="abrirVentasPDF()">📄 Ventas PDF</button>
       <button class="btn btn-naranja btn-sm" onclick="abrirLeerNota()">📷 Leer nota</button>
       <button class="btn btn-outline btn-sm" onclick="abrirConteoInicial()">📋 Conteo inicial</button>
       <button class="btn btn-outline btn-sm" onclick="cargarSemillaInventario()" title="Cargar inventario físico 31 Mar 2026">🌱 Semilla 31-Mar</button>
@@ -622,6 +626,88 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarLeerNota()">Cancelar</button>
       <button class="btn btn-primary" id="btnConfirmarNota" style="display:none;" onclick="confirmarEntradaNota()">✓ Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Merma rápida -->
+<div class="modal-overlay" id="modalMerma">
+  <div class="modal">
+    <h2>🗑 Registrar Merma</h2>
+    <div class="form-row">
+      <label>Insumo</label>
+      <select id="mermaInsumo"></select>
+    </div>
+    <div class="form-row">
+      <label>Cantidad</label>
+      <input type="number" id="mermaCantidad" placeholder="0" min="0" step="any">
+    </div>
+    <div class="form-row">
+      <label>Motivo</label>
+      <select id="mermaMotivo">
+        <option value="Vencimiento">Vencimiento / caducidad</option>
+        <option value="Daño">Daño / contaminación</option>
+        <option value="Desecho cocina">Desecho de cocina</option>
+        <option value="Sobrante">Sobrante del día</option>
+        <option value="Error preparación">Error de preparación</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Responsable</label>
+      <input type="text" id="mermaResponsable" placeholder="Tony">
+    </div>
+    <div class="form-row">
+      <label>Notas</label>
+      <input type="text" id="mermaNotas" placeholder="Detalles adicionales (opcional)">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalMerma')">Cancelar</button>
+      <button class="btn btn-danger" onclick="guardarMerma()">Registrar Merma</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Ventas PDF -->
+<div class="modal-overlay" id="modalVentasPDF">
+  <div class="modal modal-lg">
+    <h2>📄 Cargar Reporte de Ventas (PDF)</h2>
+    <div id="ventasPDFStep1">
+      <p style="font-size:13px;color:#666;margin-bottom:14px;">
+        Arrastra tu PDF de ventas aquí o tócalo para seleccionar. El sistema detecta los platillos y cantidades automáticamente.
+      </p>
+      <div class="nota-drop" id="ventasPDFDrop" onclick="document.getElementById('ventasPDFFile').click()">
+        <div style="font-size:36px;margin-bottom:8px;">📄</div>
+        <div style="font-size:14px;color:#888;font-weight:500;">Arrastra el PDF aquí o toca para seleccionar</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px;">PDF de reporte de ventas</div>
+        <input type="file" id="ventasPDFFile" accept=".pdf,application/pdf" style="display:none" onchange="procesarVentasPDF(this)">
+      </div>
+      <div id="ventasPDFLoading" style="display:none;text-align:center;padding:24px;color:#888;font-size:14px;">
+        <div style="font-size:24px;margin-bottom:8px;">🔍</div>
+        <div>Analizando reporte de ventas...</div>
+      </div>
+      <div id="ventasPDFError" style="display:none;background:#fff0f0;border:1px solid #fcc;border-radius:8px;padding:12px;font-size:13px;color:#e24b4a;margin-top:10px;"></div>
+    </div>
+    <div id="ventasPDFStep2" style="display:none;">
+      <div style="background:#eaf3de;border:1px solid #b5d68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#3b6d11;margin-bottom:14px;">
+        ✓ Revisa las cantidades — corrígelas si es necesario antes de procesar.
+      </div>
+      <div class="form-row">
+        <label>Fecha venta</label>
+        <input type="date" id="ventasPDFFecha">
+      </div>
+      <table class="nota-confirm-table">
+        <thead><tr>
+          <th>Platillo detectado</th>
+          <th>Receta en sistema</th>
+          <th style="text-align:right;">Qty vendida</th>
+        </tr></thead>
+        <tbody id="ventasPDFBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalVentasPDF')">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarVentasPDF" style="display:none;" onclick="confirmarVentasPDF()">✓ Descontar inventario</button>
     </div>
   </div>
 </div>
@@ -2260,6 +2346,229 @@ function toast(msg){
 }
 
 // ══════════════════════════════════════
+// MERMA RÁPIDA
+// ══════════════════════════════════════
+function abrirMerma(preInsumoId){
+  const sel = document.getElementById('mermaInsumo');
+  sel.innerHTML = insumos.map(i=>`<option value="${i.id}">${i.nombre} (${fmtNum(i.stock)} ${i.unidad})</option>`).join('');
+  if(preInsumoId) sel.value = preInsumoId;
+  document.getElementById('mermaCantidad').value = '';
+  document.getElementById('mermaNotas').value = '';
+  document.getElementById('mermaResponsable').value = '';
+  abrirModal('modalMerma');
+}
+
+async function guardarMerma(){
+  const insumoId    = document.getElementById('mermaInsumo').value;
+  const cantidad    = parseFloat(document.getElementById('mermaCantidad').value)||0;
+  const motivo      = document.getElementById('mermaMotivo').value;
+  const notas       = document.getElementById('mermaNotas').value.trim();
+  const responsable = document.getElementById('mermaResponsable').value.trim() || '—';
+
+  if(!insumoId)            return toast('Selecciona un insumo');
+  if(!cantidad || cantidad<=0) return toast('Ingresa una cantidad válida');
+
+  const ins = insumos.find(x=>x.id===insumoId);
+  if(!ins) return;
+
+  const concepto  = notas ? `${motivo} — ${notas}` : motivo;
+  const hora      = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const stockAntes = ins.stock;
+  ins.stock = Math.max(0, ins.stock - cantidad);
+
+  movimientos.push({
+    id: genId('mov'),
+    fecha: HOY(), hora,
+    tipo: 'MERMA',
+    insumoId, nombre: ins.nombre,
+    cantidad: -cantidad, unidad: ins.unidad,
+    responsable, concepto,
+    referencia: '',
+    stockAntes, stockDespues: ins.stock,
+  });
+
+  await guardar();
+  cerrarModal('modalMerma');
+  renderStock();
+  renderMovimientos();
+  toast(`Merma registrada ✓ — ${fmtNum(cantidad)} ${ins.unidad} de ${ins.nombre}`);
+}
+
+// ══════════════════════════════════════
+// VENTAS PDF (drag & drop / selección)
+// ══════════════════════════════════════
+let ventasPDFParsed = [];
+
+function abrirVentasPDF(){
+  document.getElementById('ventasPDFStep1').style.display = 'block';
+  document.getElementById('ventasPDFStep2').style.display = 'none';
+  document.getElementById('ventasPDFLoading').style.display = 'none';
+  document.getElementById('ventasPDFError').style.display = 'none';
+  document.getElementById('btnConfirmarVentasPDF').style.display = 'none';
+  document.getElementById('ventasPDFFecha').value = HOY();
+  document.getElementById('ventasPDFFile').value = '';
+  ventasPDFParsed = [];
+  abrirModal('modalVentasPDF');
+}
+
+async function procesarVentasPDF(input){
+  const file = input.files[0];
+  if(file) procesarVentasPDFFile(file);
+}
+
+async function procesarVentasPDFFile(file){
+  document.getElementById('ventasPDFLoading').style.display = 'block';
+  document.getElementById('ventasPDFError').style.display = 'none';
+  document.getElementById('ventasPDFStep2').style.display = 'none';
+  document.getElementById('btnConfirmarVentasPDF').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const r = await fetch('/api/leer-ventas-pdf', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({pdf: base64})
+      });
+      const d = await r.json();
+      document.getElementById('ventasPDFLoading').style.display = 'none';
+      if(!r.ok){
+        document.getElementById('ventasPDFError').style.display = 'block';
+        document.getElementById('ventasPDFError').textContent = d.error || 'Error al leer el PDF';
+        return;
+      }
+      ventasPDFParsed = d.ventas || [];
+      renderVentasPDFConfirm();
+      document.getElementById('ventasPDFStep2').style.display = 'block';
+      document.getElementById('btnConfirmarVentasPDF').style.display = 'inline-block';
+    } catch(err){
+      document.getElementById('ventasPDFLoading').style.display = 'none';
+      document.getElementById('ventasPDFError').style.display = 'block';
+      document.getElementById('ventasPDFError').textContent = 'Error de conexión: '+err.message;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderVentasPDFConfirm(){
+  const tbody = document.getElementById('ventasPDFBody');
+  tbody.innerHTML = ventasPDFParsed.map((item, i)=>{
+    const recetaMatch = recetas.find(r=>r.platillo.toLowerCase()===(item.recetaMapeada||'').toLowerCase());
+    const recetaOpts  = recetas.map(r=>`<option value="${r.platillo}" ${recetaMatch?.platillo===r.platillo?'selected':''}>${r.platillo}</option>`).join('');
+    return `<tr>
+      <td>${item.descripcion}${recetaMatch
+        ? `<span class="nota-match">✓ mapeado</span>`
+        : `<span class="nota-nomatch">sin match</span>`}
+      </td>
+      <td>
+        <select id="ventasReceta_${i}" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;max-width:180px;">
+          <option value="">— ignorar —</option>
+          ${recetaOpts}
+        </select>
+      </td>
+      <td style="text-align:right;">
+        <input type="number" id="ventasQty_${i}" value="${item.cantidad}" min="0" step="1"
+          style="width:70px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;text-align:right;outline:none;">
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function confirmarVentasPDF(){
+  const fecha = document.getElementById('ventasPDFFecha').value || HOY();
+  const hora  = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const insMap = {};
+  insumos.forEach(i=>{ insMap[i.id]=i; });
+
+  let totalVentas = 0;
+  ventasPDFParsed.forEach((_,i)=>{
+    const recetaNombre = document.getElementById('ventasReceta_'+i)?.value;
+    const qty = parseInt(document.getElementById('ventasQty_'+i)?.value)||0;
+    if(!recetaNombre || !qty) return;
+    const receta = recetas.find(r=>r.platillo===recetaNombre);
+    if(!receta) return;
+    receta.ingredientes.forEach(ing=>{
+      const ins = insMap[ing.insumoId];
+      if(!ins) return;
+      const consumo   = ing.cantidad * qty;
+      const stockAntes = ins.stock;
+      ins.stock = Math.max(0, ins.stock - consumo);
+      movimientos.push({
+        id: genId('mov'),
+        fecha, hora,
+        tipo: 'VENTA',
+        insumoId: ins.id, nombre: ins.nombre,
+        cantidad: -consumo, unidad: ins.unidad,
+        responsable: 'PDF Ventas',
+        concepto: `${recetaNombre} ×${qty}`,
+        referencia: 'PDF',
+        stockAntes, stockDespues: ins.stock,
+      });
+    });
+    totalVentas += qty;
+  });
+
+  if(!totalVentas){ toast('No hay ventas válidas para procesar'); return; }
+  await guardar();
+  cerrarModal('modalVentasPDF');
+  renderStock();
+  renderMovimientos();
+  toast(`✓ ${totalVentas} venta${totalVentas>1?'s':''} procesadas desde PDF`);
+}
+
+// ══════════════════════════════════════
+// DRAG & DROP — Notas y Ventas PDF
+// ══════════════════════════════════════
+function iniciarDragDrop(){
+  // Drop zone: Leer Nota (imágenes)
+  const notaDrop = document.getElementById('modalLeerNota').querySelector('.nota-drop');
+  if(notaDrop){
+    notaDrop.addEventListener('dragover', e=>{
+      e.preventDefault();
+      notaDrop.classList.add('drag-over');
+    });
+    notaDrop.addEventListener('dragleave', ()=> notaDrop.classList.remove('drag-over'));
+    notaDrop.addEventListener('drop', e=>{
+      e.preventDefault();
+      notaDrop.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('image/')){
+        toast('Solo se aceptan imágenes (JPG, PNG, HEIC)');
+        return;
+      }
+      const fotoInput = document.getElementById('notaFoto');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fotoInput.files = dt.files;
+      procesarFotoNota(fotoInput);
+    });
+  }
+
+  // Drop zone: Ventas PDF
+  const pdfDrop = document.getElementById('ventasPDFDrop');
+  if(pdfDrop){
+    pdfDrop.addEventListener('dragover', e=>{
+      e.preventDefault();
+      pdfDrop.classList.add('drag-over');
+    });
+    pdfDrop.addEventListener('dragleave', ()=> pdfDrop.classList.remove('drag-over'));
+    pdfDrop.addEventListener('drop', e=>{
+      e.preventDefault();
+      pdfDrop.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if(!file){ return; }
+      if(file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+        toast('Por favor sube un archivo PDF');
+        return;
+      }
+      procesarVentasPDFFile(file);
+    });
+  }
+}
+
+// ══════════════════════════════════════
 // FECHA HEADER
 // ══════════════════════════════════════
 function actualizarFecha(){
@@ -2273,6 +2582,8 @@ function actualizarFecha(){
 // ══════════════════════════════════════
 actualizarFecha();
 setInterval(actualizarFecha,60000);
+
+iniciarDragDrop();
 
 (async()=>{
   await cargarDatos();

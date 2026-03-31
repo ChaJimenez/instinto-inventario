@@ -494,6 +494,73 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
   }
 });
 
+// ── Leer reporte de ventas en PDF con Claude ──
+app.post('/api/leer-ventas-pdf', async (req, res) => {
+  try {
+    const { pdf } = req.body;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada en Vercel' });
+    if (!pdf)    return res.status(400).json({ error: 'Falta el PDF' });
+
+    const recetasActuales = await kv.get(K.recetas) || [];
+    const catalogo = recetasActuales.map(r => r.platillo).join(', ');
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 2048,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: pdf }
+            },
+            {
+              type: 'text',
+              text: `Eres un asistente de inventario para el restaurante INSTINTO. Analiza este reporte de ventas en PDF.
+
+Nuestro menú es: ${catalogo}
+
+Extrae todos los platillos vendidos y sus cantidades totales. Para cada platillo, mapea al nombre EXACTO del menú si coincide.
+
+Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
+{
+  "ventas": [
+    {
+      "descripcion": "nombre como aparece en el PDF",
+      "recetaMapeada": "nombre EXACTO del platillo de nuestro menú, o null si no hay match",
+      "cantidad": 0
+    }
+  ]
+}`
+            }
+          ]
+        }]
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) return res.status(500).json({ error: d.error?.message || 'Error al llamar Anthropic API' });
+
+    const texto = d.content?.[0]?.text || '';
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(500).json({ error: 'No se pudo extraer datos del PDF. Verifica que sea un reporte de ventas legible.' });
+
+    const resultado = JSON.parse(jsonMatch[0]);
+    res.json(resultado);
+  } catch (e) {
+    console.error('/api/leer-ventas-pdf', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
 module.exports = app;
