@@ -162,6 +162,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:30px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
+/* ── STOCK LIVE ── */
+.stock-proy{font-size:11px;color:#b06800;margin-top:2px;font-weight:600;}
+.stock-proy.ok{color:#3b6d11;}
+.stock-proy.critico{color:#e24b4a;}
+.ventas-banner{background:#e8f0fe;border:1px solid #b0c4f5;border-radius:10px;padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.ventas-banner.hidden{display:none;}
+.ventas-banner-txt{font-size:13px;color:#0D2A5E;font-weight:500;}
+.ventas-banner-txt strong{font-weight:700;}
 /* ── MODAL NOTA ── */
 .nota-drop{border:2px dashed #ddd;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:#fafafa;}
 .nota-drop:hover{border-color:#0D2A5E;background:#f0f4ff;}
@@ -224,6 +232,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div id="alertaPrecio" class="alerta-badge" style="display:none">
       <span class="num" id="alertaPrecioNum">0</span> precios sin revisar (+7 días)
     </div>
+  </div>
+
+  <!-- Banner ventas pendientes del POS -->
+  <div id="ventasBanner" class="ventas-banner hidden">
+    <div class="ventas-banner-txt" id="ventasBannerTxt"></div>
+    <button class="btn btn-primary btn-sm" onclick="abrirCorte()">Ejecutar corte →</button>
   </div>
 
   <!-- Stats mini -->
@@ -741,6 +755,7 @@ let filtroActivo='todos';
 let importParsed=[];
 let verOrdenFolioActual=null;
 let ultimaActualizacion=0;
+let stockLiveData=null; // cache del endpoint /api/stock-live
 
 // ══════════════════════════════════════
 // API
@@ -880,6 +895,34 @@ function renderTodo(){
   switchTab(id);
 }
 
+async function cargarStockLive(){
+  try {
+    const r = await fetch('/api/stock-live');
+    if(!r.ok) return;
+    stockLiveData = await r.json();
+    actualizarBannerVentas();
+    renderStock(); // re-render con datos proyectados
+  } catch(_){}
+}
+
+function actualizarBannerVentas(){
+  if(!stockLiveData) return;
+  const banner = document.getElementById('ventasBanner');
+  const txt    = document.getElementById('ventasBannerTxt');
+  const { ventasPendientes, fechasPendientes, ultimoCorte } = stockLiveData;
+  if(!ventasPendientes){
+    banner.classList.add('hidden');
+    return;
+  }
+  banner.classList.remove('hidden');
+  const fechasStr = fechasPendientes.length <= 3
+    ? fechasPendientes.join(', ')
+    : fechasPendientes.slice(-3).join(', ') + ` (+${fechasPendientes.length-3} más)`;
+  txt.innerHTML = `📦 <strong>${ventasPendientes} ventas del POS</strong> sin descontar del inventario`
+    + (fechasPendientes.length ? ` — días pendientes: ${fechasStr}` : '')
+    + (ultimoCorte ? ` · último corte: ${ultimoCorte}` : '');
+}
+
 // ══════════════════════════════════════
 // RENDER: STOCK
 // ══════════════════════════════════════
@@ -937,7 +980,13 @@ function renderStock(){
         </div>
         <div class="insumo-stock-info">
           <div class="insumo-stock-num ${sem}">${fmtNum(ins.stock)} ${ins.unidad}</div>
-          <div class="insumo-min">mín ${fmtNum(ins.stockMin)}</div>
+          ${(()=>{
+            const live = stockLiveData?.proyectado?.[ins.id];
+            if(!live || live.consumoPendiente===0) return `<div class="insumo-min">mín ${fmtNum(ins.stockMin)}</div>`;
+            const semP = live.stockProyectado < ins.stockMin ? 'critico' : live.stockProyectado < ins.stockMin*1.5 ? '' : 'ok';
+            return `<div class="stock-proy ${semP}">→ ${fmtNum(live.stockProyectado)} tras ventas</div>
+                    <div class="insumo-min">mín ${fmtNum(ins.stockMin)}</div>`;
+          })()}
         </div>
         <div class="insumo-costo">${ins.costo?fmtMoney(ins.costo)+'/'+ins.unidad:'sin costo'}</div>
         <div class="insumo-actions" onclick="event.stopPropagation()">
@@ -1584,6 +1633,7 @@ async function ejecutarCorte(){
     await cargarDatos();
     renderStock();
     renderMovimientos();
+    cargarStockLive();
     toast(`Corte ejecutado ✓ — ${d.ventasProcesadas} ventas · ${d.insumosAfectados} insumos descontados`);
   } catch(e){
     errEl.textContent='Error de conexión: '+e.message;
@@ -1937,7 +1987,11 @@ setInterval(actualizarFecha,60000);
 (async()=>{
   await cargarDatos();
   renderStock();
+  cargarStockLive(); // cargar proyección desde POS (no bloquea render inicial)
 })();
+
+// Actualizar stock live cada 2 minutos
+setInterval(cargarStockLive, 120000);
 </script>
 </body>
 </html>

@@ -80,6 +80,81 @@ app.get('/api/lastUpdate', async (req, res) => {
   }
 });
 
+// ── Stock en tiempo real: stock actual − consumo desde último corte ──
+app.get('/api/stock-live', async (req, res) => {
+  try {
+    const [insumosRaw, recetasRaw, cortesRaw, posVentas] = await Promise.all([
+      kv.get(K.insumos),
+      kv.get(K.recetas),
+      kv.get(K.cortes),
+      kv.get(K.posVentas),
+    ]);
+
+    const insumos  = insumosRaw  || [];
+    const recetas  = recetasRaw  || [];
+    const cortes   = cortesRaw   || [];
+    const ventas   = posVentas   || [];
+
+    // Fecha del último corte procesado
+    const ultimoCorte = cortes.length
+      ? cortes.sort((a,b)=>a.fecha.localeCompare(b.fecha)).at(-1).fecha
+      : null;
+
+    // Ventas del POS que NO han sido procesadas en un corte
+    // Un corte procesa todas las ventas de una fecha específica
+    const fechasProcesadas = new Set(cortes.map(c=>c.fecha));
+    const ventasPendientes = ventas.filter(v => {
+      if(v.excluida) return false;
+      const fecha = v.fecha || new Date(v.id).toISOString().slice(0,10);
+      return !fechasProcesadas.has(fecha);
+    });
+
+    // Mapa recetas: platillo → ingredientes
+    const recetaMap = {};
+    recetas.forEach(r => { recetaMap[r.platillo] = r.ingredientes || []; });
+
+    // Calcular consumo acumulado de ventas pendientes
+    const consumo = {}; // { insumoId: cantidad }
+    const sinReceta = new Set();
+    ventasPendientes.forEach(v => {
+      (v.items || []).filter(it => !it.cancelado).forEach(item => {
+        const receta = recetaMap[item.n];
+        if(!receta || !receta.length) { sinReceta.add(item.n); return; }
+        const qty = item.q || 1;
+        receta.forEach(ing => {
+          consumo[ing.insumoId] = (consumo[ing.insumoId]||0) + ing.cantidad * qty;
+        });
+      });
+    });
+
+    // Calcular stock proyectado por insumo
+    const proyectado = {};
+    insumos.forEach(ins => {
+      proyectado[ins.id] = {
+        stockReal:      ins.stock,
+        consumoPendiente: consumo[ins.id] || 0,
+        stockProyectado:  Math.max(0, ins.stock - (consumo[ins.id]||0)),
+      };
+    });
+
+    // Agrupar ventas pendientes por fecha
+    const fechasPendientes = [...new Set(
+      ventasPendientes.map(v => v.fecha || new Date(v.id).toISOString().slice(0,10))
+    )].sort();
+
+    res.json({
+      ventasPendientes:  ventasPendientes.length,
+      fechasPendientes,
+      ultimoCorte,
+      proyectado,
+      sinReceta: [...sinReceta],
+    });
+  } catch(e) {
+    console.error('/api/stock-live', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Leer ventas del POS (solo lectura) ──
 app.get('/api/ventas-pos', async (req, res) => {
   try {
