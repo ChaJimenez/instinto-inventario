@@ -162,6 +162,13 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:30px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
+/* ── CONTEO INICIAL ── */
+.conteo-row{display:grid;grid-template-columns:1fr 130px 80px;gap:10px;align-items:center;background:#fff;border:1px solid #e8e8e8;border-radius:8px;padding:10px 14px;}
+.conteo-nombre{font-size:13px;font-weight:500;}
+.conteo-actual{font-size:12px;color:#aaa;}
+.conteo-row input{padding:8px 10px;border:1px solid #ddd;border-radius:7px;font-size:14px;font-weight:600;text-align:right;outline:none;width:100%;}
+.conteo-row input:focus{border-color:#0D2A5E;}
+.conteo-row .unidad{font-size:12px;color:#888;text-align:right;}
 /* ── STOCK LIVE ── */
 .stock-proy{font-size:11px;color:#b06800;margin-top:2px;font-weight:600;}
 .stock-proy.ok{color:#3b6d11;}
@@ -258,6 +265,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn-corte" onclick="abrirCorte()">📅 Corte del Día</button>
       <button class="btn btn-naranja btn-sm" onclick="abrirLeerNota()">📷 Leer nota</button>
+      <button class="btn btn-outline btn-sm" onclick="abrirConteoInicial()">📋 Conteo inicial</button>
       <button class="btn btn-outline btn-sm" onclick="abrirModalInsumo()">+ Insumo</button>
     </div>
   </div>
@@ -521,6 +529,21 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('modalRecetaNueva')">Cancelar</button>
       <button class="btn btn-primary" onclick="crearRecetaPersonalizada()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Conteo Inicial -->
+<div class="modal-overlay" id="modalConteoInicial">
+  <div class="modal modal-lg">
+    <h2>📋 Conteo Inicial de Inventario</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:16px;">
+      Ingresa las cantidades que tienes hoy físicamente. Deja en blanco lo que no tengas o no sepas.
+    </p>
+    <div id="conteoBody" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalConteoInicial')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarConteoInicial()">✓ Guardar conteo</button>
     </div>
   </div>
 </div>
@@ -1742,6 +1765,63 @@ async function limpiarMovimientos(){
   await guardar();
   renderMovimientos();
   toast('Historial borrado ✓');
+}
+
+// ══════════════════════════════════════
+// MODAL: CONTEO INICIAL
+// ══════════════════════════════════════
+function abrirConteoInicial(){
+  const body = document.getElementById('conteoBody');
+  body.innerHTML = insumos.map(ins => `
+    <div class="conteo-row">
+      <div>
+        <div class="conteo-nombre">${ins.nombre}</div>
+        <div class="conteo-actual">${ins.stock ? 'Actual: '+fmtNum(ins.stock)+' '+ins.unidad : 'Sin stock registrado'}</div>
+      </div>
+      <input type="number" id="conteo_${ins.id}" placeholder="0"
+        min="0" step="${ins.unidad==='g'||ins.unidad==='ml'?'1':'1'}"
+        value="${ins.stock || ''}"
+        style="color:${ins.stock?'#0D2A5E':'#1a1a1a'}">
+      <div class="unidad">${ins.unidad}</div>
+    </div>
+  `).join('');
+  abrirModal('modalConteoInicial');
+}
+
+function guardarConteoInicial(){
+  let actualizados = 0;
+  insumos.forEach(ins => {
+    const el = document.getElementById('conteo_'+ins.id);
+    if(!el) return;
+    const val = el.value.trim();
+    if(val === '') return; // no tocar si está vacío
+    const cantidad = parseFloat(val) || 0;
+    if(cantidad !== ins.stock) {
+      const stockAntes = ins.stock;
+      ins.stock = cantidad;
+      movimientos.push({
+        id: genId('mov'),
+        fecha: HOY(),
+        hora: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+        tipo: 'AJUSTE',
+        insumoId: ins.id,
+        nombre: ins.nombre,
+        cantidad: cantidad - stockAntes,
+        unidad: ins.unidad,
+        responsable: 'Conteo físico',
+        concepto: 'Conteo inicial de inventario',
+        referencia: '',
+        stockAntes,
+        stockDespues: cantidad,
+      });
+      actualizados++;
+    }
+  });
+  if(!actualizados){ toast('Sin cambios que guardar'); cerrarModal('modalConteoInicial'); return; }
+  guardar();
+  cerrarModal('modalConteoInicial');
+  renderStock();
+  toast(`Conteo guardado ✓ — ${actualizados} insumo${actualizados>1?'s':''} actualizados`);
 }
 
 // ══════════════════════════════════════
