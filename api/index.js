@@ -317,6 +317,76 @@ app.post('/api/importar', async (req, res) => {
   }
 });
 
+// ── Leer nota de entrega con Claude Vision ──
+app.post('/api/leer-nota', async (req, res) => {
+  try {
+    const { imagen, mediaType } = req.body;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada en Vercel' });
+    if (!imagen)  return res.status(400).json({ error: 'Falta la imagen' });
+
+    // Obtener catálogo de insumos para dar contexto a Claude
+    const insumosActuales = await kv.get(K.insumos) || [];
+    const catalogo = insumosActuales.map(i => i.nombre).join(', ');
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType || 'image/jpeg', data: imagen }
+            },
+            {
+              type: 'text',
+              text: `Eres un asistente de inventario para el restaurante INSTINTO. Analiza esta nota de entrega o remisión de proveedor.
+
+Nuestro catálogo de insumos es: ${catalogo}
+
+Extrae todos los productos y cantidades que aparecen en la nota. Para cada producto, mapea al insumo más parecido del catálogo si existe.
+
+Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
+{
+  "proveedor": "nombre del proveedor si aparece, o null",
+  "items": [
+    {
+      "descripcion": "nombre como aparece en la nota",
+      "insumoMapeado": "nombre EXACTO del insumo de nuestro catálogo, o null si no hay match",
+      "cantidad": 0,
+      "unidad": "kg/g/pza/litro/etc"
+    }
+  ]
+}`
+            }
+          ]
+        }]
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) return res.status(500).json({ error: d.error?.message || 'Error al llamar Anthropic API' });
+
+    const texto = d.content?.[0]?.text || '';
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(500).json({ error: 'No se pudo extraer datos de la nota. Intenta con una foto más clara.' });
+
+    const resultado = JSON.parse(jsonMatch[0]);
+    res.json(resultado);
+  } catch (e) {
+    console.error('/api/leer-nota', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
 module.exports = app;

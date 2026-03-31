@@ -162,6 +162,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:30px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
+/* ── MODAL NOTA ── */
+.nota-drop{border:2px dashed #ddd;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:#fafafa;}
+.nota-drop:hover{border-color:#0D2A5E;background:#f0f4ff;}
+.nota-confirm-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;}
+.nota-confirm-table th{text-align:left;padding:7px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
+.nota-confirm-table td{padding:7px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.nota-confirm-table input[type=number]{width:80px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;text-align:right;outline:none;}
+.nota-confirm-table input[type=number]:focus{border-color:#0D2A5E;}
+.nota-match{font-size:11px;color:#3b6d11;background:#eaf3de;border-radius:10px;padding:1px 7px;margin-left:4px;}
+.nota-nomatch{font-size:11px;color:#b06800;background:#fff8ed;border-radius:10px;padding:1px 7px;margin-left:4px;}
 /* ── EMPTY STATE ── */
 .empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px;}
 /* ── STAT MINI ── */
@@ -233,6 +243,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn-corte" onclick="abrirCorte()">📅 Corte del Día</button>
+      <button class="btn btn-naranja btn-sm" onclick="abrirLeerNota()">📷 Leer nota</button>
       <button class="btn btn-outline btn-sm" onclick="abrirModalInsumo()">+ Insumo</button>
     </div>
   </div>
@@ -496,6 +507,83 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('modalRecetaNueva')">Cancelar</button>
       <button class="btn btn-primary" onclick="crearRecetaPersonalizada()">Crear</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Proveedores y costo -->
+<div class="modal-overlay" id="modalProveedores">
+  <div class="modal">
+    <h2 id="modalProvTitulo">Proveedores</h2>
+    <input type="hidden" id="provInsumoId">
+    <div style="background:#f0f4ff;border:1px solid #c8d8f0;border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:11px;color:#0D2A5E;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">Costo por unidad</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;color:#333;font-weight:700;">$</span>
+        <input type="number" id="provCostoInput" placeholder="0.00" min="0" step="0.01" style="flex:1;padding:10px 12px;border:1px solid #c8d8f0;border-radius:7px;font-size:16px;font-weight:700;outline:none;color:#0D2A5E;">
+        <span id="provCostoUnidad" style="font-size:13px;color:#888;min-width:60px;">/ unidad</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Proveedores</div>
+    <div id="provModalList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px;"></div>
+    <button class="btn btn-outline btn-sm" onclick="agregarProvModalRow()">+ Agregar proveedor</button>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalProveedores')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProveedoresModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Leer nota de entrega -->
+<div class="modal-overlay" id="modalLeerNota">
+  <div class="modal modal-lg">
+    <h2>📷 Leer Nota de Entrega</h2>
+    <!-- Step 1: foto -->
+    <div id="notaStep1">
+      <p style="font-size:13px;color:#666;margin-bottom:14px;">
+        Toma una foto de la nota o remisión del proveedor. El sistema detecta los productos y cantidades automáticamente.
+      </p>
+      <div class="nota-drop" onclick="document.getElementById('notaFoto').click()">
+        <div style="font-size:36px;margin-bottom:8px;">📷</div>
+        <div style="font-size:14px;color:#888;font-weight:500;">Toca para tomar foto o seleccionar imagen</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px;">JPG, PNG, HEIC</div>
+        <input type="file" id="notaFoto" accept="image/*" capture="environment" style="display:none" onchange="procesarFotoNota(this)">
+      </div>
+      <div id="notaPreviewImg" style="margin-top:12px;text-align:center;display:none;">
+        <img id="notaImg" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid #ddd;object-fit:contain;">
+      </div>
+      <div id="notaLoading" style="display:none;text-align:center;padding:24px;color:#888;font-size:14px;">
+        <div style="font-size:24px;margin-bottom:8px;">🔍</div>
+        <div>Leyendo nota de entrega...</div>
+      </div>
+      <div id="notaError" style="display:none;background:#fff0f0;border:1px solid #fcc;border-radius:8px;padding:12px;font-size:13px;color:#e24b4a;margin-top:10px;"></div>
+    </div>
+    <!-- Step 2: confirmar -->
+    <div id="notaStep2" style="display:none;">
+      <div style="background:#eaf3de;border:1px solid #b5d68a;border-radius:8px;padding:10px 14px;font-size:13px;color:#3b6d11;margin-bottom:14px;">
+        ✓ Revisé las cantidades — corrígelas si es necesario antes de registrar.
+      </div>
+      <table class="nota-confirm-table">
+        <thead><tr>
+          <th>Producto detectado</th>
+          <th>Insumo</th>
+          <th style="text-align:right;">Cantidad</th>
+          <th>Unidad</th>
+        </tr></thead>
+        <tbody id="notaConfirmBody"></tbody>
+      </table>
+      <div class="form-row" style="margin-top:10px;">
+        <label>Proveedor</label>
+        <input type="text" id="notaProveedor" placeholder="Nombre del proveedor">
+      </div>
+      <div class="form-row">
+        <label>Concepto</label>
+        <input type="text" id="notaConcepto" placeholder="Entrega semanal, compra mercado, etc.">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarLeerNota()">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarNota" style="display:none;" onclick="confirmarEntradaNota()">✓ Registrar entrada</button>
     </div>
   </div>
 </div>
@@ -853,9 +941,10 @@ function renderStock(){
         </div>
         <div class="insumo-costo">${ins.costo?fmtMoney(ins.costo)+'/'+ins.unidad:'sin costo'}</div>
         <div class="insumo-actions" onclick="event.stopPropagation()">
-          <button class="ico-btn" title="Entrada" onclick="abrirMovRapido('${ins.id}','ENTRADA')">+</button>
+          <button class="ico-btn" title="Entrada rápida" onclick="abrirMovRapido('${ins.id}','ENTRADA')">+</button>
           <button class="ico-btn danger" title="Merma" onclick="abrirMovRapido('${ins.id}','MERMA')">−</button>
-          <button class="ico-btn" title="Editar" onclick="abrirModalInsumo('${ins.id}')">✏️</button>
+          <button class="ico-btn" title="Proveedores y costo" onclick="abrirModalProveedores('${ins.id}')">🏪</button>
+          <button class="ico-btn" title="Editar insumo" onclick="abrirModalInsumo('${ins.id}')">✏️</button>
         </div>
       </div>
       <div class="insumo-expand" id="expand_${ins.id}">
@@ -1603,6 +1692,210 @@ async function limpiarMovimientos(){
   await guardar();
   renderMovimientos();
   toast('Historial borrado ✓');
+}
+
+// ══════════════════════════════════════
+// MODAL: PROVEEDORES Y COSTO
+// ══════════════════════════════════════
+function abrirModalProveedores(insumoId){
+  const ins = insumos.find(i=>i.id===insumoId);
+  if(!ins) return;
+  document.getElementById('provInsumoId').value = insumoId;
+  document.getElementById('modalProvTitulo').textContent = ins.nombre + ' — Proveedores';
+  document.getElementById('provCostoInput').value = ins.costo || '';
+  document.getElementById('provCostoUnidad').textContent = '/ ' + ins.unidad;
+  const list = document.getElementById('provModalList');
+  list.innerHTML = '';
+  (ins.proveedores||[]).forEach(p => agregarProvModalRow(p));
+  abrirModal('modalProveedores');
+}
+
+function agregarProvModalRow(prov){
+  const list = document.getElementById('provModalList');
+  const div = document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;align-items:center;background:#f9f9f7;border-radius:8px;padding:8px 10px;';
+  div.innerHTML=`
+    <input type="text" placeholder="Nombre del proveedor" value="${prov?.nombre||''}"
+      style="flex:2;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" data-prov-nombre>
+    <input type="text" placeholder="Unidad compra (kg, costal...)" value="${prov?.unidadCompra||''}"
+      style="flex:1;min-width:80px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" data-prov-unidad>
+    <input type="number" placeholder="Precio" value="${prov?.precio||''}" min="0" step="0.01"
+      style="width:75px;padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;outline:none;" data-prov-precio>
+    <button onclick="this.parentElement.remove()" title="Eliminar"
+      style="width:28px;height:28px;border-radius:6px;border:1px solid #fcc;background:none;cursor:pointer;color:#e24b4a;font-size:14px;flex-shrink:0;">✕</button>
+  `;
+  list.appendChild(div);
+}
+
+function guardarProveedoresModal(){
+  const insumoId = document.getElementById('provInsumoId').value;
+  const costo    = parseFloat(document.getElementById('provCostoInput').value)||0;
+  const idx      = insumos.findIndex(i=>i.id===insumoId);
+  if(idx<0) return;
+
+  const rows = document.getElementById('provModalList').children;
+  const proveedores = [...rows].map(row=>{
+    const nombre = row.querySelector('[data-prov-nombre]')?.value.trim()||'';
+    const unidadCompra = row.querySelector('[data-prov-unidad]')?.value.trim()||'';
+    const precio = parseFloat(row.querySelector('[data-prov-precio]')?.value)||0;
+    if(!nombre) return null;
+    return {id:genId('prov'), nombre, unidadCompra, precio, actualizacion:HOY()};
+  }).filter(Boolean);
+
+  insumos[idx] = {
+    ...insumos[idx],
+    costo,
+    proveedores,
+    ultimaRevisionPrecio: costo !== insumos[idx].costo ? HOY() : insumos[idx].ultimaRevisionPrecio,
+  };
+  guardar();
+  cerrarModal('modalProveedores');
+  renderStock();
+  toast('Proveedores y costo actualizados ✓');
+}
+
+// ══════════════════════════════════════
+// LEER NOTA DE ENTREGA (Claude Vision)
+// ══════════════════════════════════════
+let notaItemsParsed = [];
+
+function abrirLeerNota(){
+  // Reset
+  document.getElementById('notaStep1').style.display='block';
+  document.getElementById('notaStep2').style.display='none';
+  document.getElementById('notaPreviewImg').style.display='none';
+  document.getElementById('notaLoading').style.display='none';
+  document.getElementById('notaError').style.display='none';
+  document.getElementById('btnConfirmarNota').style.display='none';
+  document.getElementById('notaFoto').value='';
+  document.getElementById('notaProveedor').value='';
+  document.getElementById('notaConcepto').value='';
+  notaItemsParsed=[];
+  abrirModal('modalLeerNota');
+}
+
+function cerrarLeerNota(){
+  cerrarModal('modalLeerNota');
+}
+
+async function procesarFotoNota(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  // Mostrar preview
+  const reader = new FileReader();
+  reader.onload = e=>{
+    document.getElementById('notaImg').src = e.target.result;
+    document.getElementById('notaPreviewImg').style.display='block';
+  };
+  reader.readAsDataURL(file);
+
+  // Mostrar loading
+  document.getElementById('notaLoading').style.display='block';
+  document.getElementById('notaError').style.display='none';
+
+  // Convertir a base64 para el API
+  const base64Reader = new FileReader();
+  base64Reader.onload = async e=>{
+    const base64 = e.target.result.split(',')[1]; // quitar el "data:image/...;base64,"
+    const mediaType = file.type || 'image/jpeg';
+    try {
+      const r = await fetch('/api/leer-nota', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({imagen: base64, mediaType})
+      });
+      const d = await r.json();
+      document.getElementById('notaLoading').style.display='none';
+
+      if(!r.ok){
+        document.getElementById('notaError').style.display='block';
+        document.getElementById('notaError').textContent = d.error || 'Error al leer la nota';
+        return;
+      }
+
+      // Autocompletar proveedor si lo detectó
+      if(d.proveedor) document.getElementById('notaProveedor').value = d.proveedor;
+
+      // Mostrar tabla de confirmación
+      notaItemsParsed = d.items || [];
+      renderNotaConfirm();
+      document.getElementById('notaStep2').style.display='block';
+      document.getElementById('btnConfirmarNota').style.display='inline-block';
+    } catch(err){
+      document.getElementById('notaLoading').style.display='none';
+      document.getElementById('notaError').style.display='block';
+      document.getElementById('notaError').textContent = 'Error de conexión: '+err.message;
+    }
+  };
+  base64Reader.readAsDataURL(file);
+}
+
+function renderNotaConfirm(){
+  const tbody = document.getElementById('notaConfirmBody');
+  tbody.innerHTML = notaItemsParsed.map((item, i)=>{
+    const insumoMatch = item.insumoMapeado
+      ? insumos.find(ins=>ins.nombre.toLowerCase()===item.insumoMapeado.toLowerCase())
+      : null;
+    const selectOpts = insumos.map(ins=>
+      `<option value="${ins.id}" ${insumoMatch?.id===ins.id?'selected':''}>${ins.nombre} (${ins.unidad})</option>`
+    ).join('');
+    return `<tr>
+      <td>${item.descripcion}${insumoMatch
+        ? `<span class="nota-match">✓ mapeado</span>`
+        : `<span class="nota-nomatch">sin match</span>`}
+      </td>
+      <td>
+        <select id="notaInsumo_${i}" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;max-width:160px;">
+          <option value="">— ignorar —</option>
+          ${selectOpts}
+        </select>
+      </td>
+      <td style="text-align:right;">
+        <input type="number" id="notaCant_${i}" value="${item.cantidad}" min="0" step="any">
+      </td>
+      <td style="font-size:12px;color:#888;">${item.unidad}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function confirmarEntradaNota(){
+  const proveedor = document.getElementById('notaProveedor').value.trim() || 'Proveedor (nota)';
+  const concepto  = document.getElementById('notaConcepto').value.trim() || 'Entrada por nota de entrega';
+  const hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+  let registrados = 0;
+  notaItemsParsed.forEach((_,i)=>{
+    const insumoId = document.getElementById('notaInsumo_'+i)?.value;
+    const cantidad = parseFloat(document.getElementById('notaCant_'+i)?.value)||0;
+    if(!insumoId || !cantidad) return;
+
+    const ins = insumos.find(x=>x.id===insumoId);
+    if(!ins) return;
+
+    const stockAntes = ins.stock;
+    ins.stock += cantidad;
+    movimientos.push({
+      id: genId('mov'),
+      fecha: HOY(), hora,
+      tipo: 'ENTRADA',
+      insumoId, nombre: ins.nombre,
+      cantidad, unidad: ins.unidad,
+      responsable: proveedor,
+      concepto,
+      referencia: '',
+      stockAntes, stockDespues: ins.stock,
+    });
+    registrados++;
+  });
+
+  if(!registrados){ toast('No hay items válidos para registrar'); return; }
+
+  await guardar();
+  cerrarLeerNota();
+  renderStock();
+  renderMovimientos();
+  toast(`Entrada registrada ✓ — ${registrados} insumo${registrados>1?'s':''} actualizados`);
 }
 
 // ══════════════════════════════════════
