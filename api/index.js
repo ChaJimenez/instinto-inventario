@@ -100,13 +100,25 @@ app.get('/api/stock-live', async (req, res) => {
       ? cortes.sort((a,b)=>a.fecha.localeCompare(b.fecha)).at(-1).fecha
       : null;
 
+    // Normalizar fecha a YYYY-MM-DD independientemente del formato del POS
+    const normalizarFecha = (v) => {
+      if(v.fecha) {
+        // POS puede guardar como DD/M/YYYY o YYYY-MM-DD
+        const f = v.fecha;
+        if(f.includes('/')) {
+          const [d,m,y] = f.split('/');
+          return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        }
+        return f.slice(0,10);
+      }
+      return new Date(v.id).toISOString().slice(0,10);
+    };
+
     // Ventas del POS que NO han sido procesadas en un corte
-    // Un corte procesa todas las ventas de una fecha específica
     const fechasProcesadas = new Set(cortes.map(c=>c.fecha));
     const ventasPendientes = ventas.filter(v => {
       if(v.excluida) return false;
-      const fecha = v.fecha || new Date(v.id).toISOString().slice(0,10);
-      return !fechasProcesadas.has(fecha);
+      return !fechasProcesadas.has(normalizarFecha(v));
     });
 
     // Mapa recetas: platillo → ingredientes
@@ -137,9 +149,9 @@ app.get('/api/stock-live', async (req, res) => {
       };
     });
 
-    // Agrupar ventas pendientes por fecha
+    // Agrupar ventas pendientes por fecha (normalizada)
     const fechasPendientes = [...new Set(
-      ventasPendientes.map(v => v.fecha || new Date(v.id).toISOString().slice(0,10))
+      ventasPendientes.map(v => normalizarFecha(v))
     )].sort();
 
     res.json({
@@ -193,11 +205,19 @@ app.post('/api/corte', async (req, res) => {
       return res.status(400).json({ error: `El corte del ${fecha} ya fue procesado.` });
     }
 
-    // Filtrar ventas del día solicitado
-    const ventasHoy = ventas.filter(v => {
-      const f = v.fecha || '';
-      return f === fecha || f.startsWith(fecha);
-    });
+    // Filtrar ventas del día solicitado (normalizando formato DD/M/YYYY o YYYY-MM-DD)
+    const normFecha = (v) => {
+      if(v.fecha) {
+        const f = v.fecha;
+        if(f.includes('/')) {
+          const [d,m,y] = f.split('/');
+          return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        }
+        return f.slice(0,10);
+      }
+      return new Date(v.id).toISOString().slice(0,10);
+    };
+    const ventasHoy = ventas.filter(v => normFecha(v) === fecha);
 
     // Mapa de recetas: platillo → ingredientes
     const recetaMap = {};
