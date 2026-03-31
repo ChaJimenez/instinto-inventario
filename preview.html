@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INSTINTO — Inventario (Preview)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-height:100vh;color:#1a1a1a;}
+.header{background:#0D2A5E;color:#fff;padding:13px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:200;}
+.header-brand{display:flex;align-items:center;gap:10px;}
+.header h1{font-size:18px;font-weight:700;letter-spacing:0.14em;}
+.header-tag{background:#F5A020;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;letter-spacing:0.08em;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.fecha{font-size:11px;color:rgba(255,255,255,0.6);}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4caf50;display:inline-block;}
+.preview-ribbon{background:#F5A020;color:#fff;text-align:center;font-size:11px;font-weight:700;padding:5px;letter-spacing:0.06em;}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e5e5e5;overflow-x:auto;position:sticky;top:47px;z-index:190;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex:1;min-width:80px;padding:12px 4px;font-size:12px;text-align:center;cursor:pointer;color:#888;border:none;background:none;white-space:nowrap;font-weight:500;}
+.tab.active{color:#0D2A5E;border-bottom:2px solid #0D2A5E;font-weight:700;}
+.screen{display:none;padding:18px;max-width:980px;margin:0 auto;}
+.screen.active{display:block;}
+.alertas-banner{background:#fff8ed;border:1px solid #e8a020;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+.alertas-banner.hidden{display:none;}
+.alerta-badge{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:#b06800;}
+.alerta-badge .num{background:#F5A020;color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;}
+.sec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.sec-title{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.07em;}
+.filtros{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.filtro-btn{padding:6px 14px;border-radius:20px;border:1px solid #ddd;font-size:12px;cursor:pointer;background:#fff;color:#555;white-space:nowrap;transition:all 0.1s;}
+.filtro-btn.active{background:#0D2A5E;color:#fff;border-color:#0D2A5E;}
+.insumo-list{display:flex;flex-direction:column;gap:8px;}
+.insumo-card{background:#fff;border:1px solid #e8e8e8;border-radius:10px;overflow:hidden;}
+.insumo-card.critico{border-left:3px solid #e24b4a;}
+.insumo-card.bajo{border-left:3px solid #F5A020;}
+.insumo-card.ok{border-left:3px solid #4caf50;}
+.insumo-row{padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.semaforo{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.semaforo.critico{background:#e24b4a;}
+.semaforo.bajo{background:#F5A020;}
+.semaforo.ok{background:#4caf50;}
+.insumo-nombre{flex:1;font-size:14px;font-weight:500;}
+.insumo-precio-alerta{font-size:10px;background:#fff8ed;color:#b06800;border:1px solid #e8a020;border-radius:10px;padding:1px 7px;margin-left:4px;}
+.insumo-stock-info{text-align:right;min-width:100px;}
+.insumo-stock-num{font-size:16px;font-weight:700;}
+.insumo-stock-num.critico{color:#e24b4a;}
+.insumo-stock-num.bajo{color:#b06800;}
+.insumo-min{font-size:11px;color:#aaa;}
+.insumo-costo{font-size:12px;color:#666;min-width:90px;text-align:right;}
+.insumo-actions{display:flex;gap:6px;flex-shrink:0;}
+.ico-btn{width:30px;height:30px;border-radius:7px;border:1px solid #e0e0e0;background:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.ico-btn:hover{border-color:#0D2A5E;}
+.insumo-expand{display:none;padding:0 14px 14px;border-top:1px solid #f5f5f3;}
+.insumo-expand.open{display:block;}
+.prov-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+.prov-row{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#f9f9f7;border-radius:7px;font-size:13px;}
+.prov-nombre{flex:1;font-weight:500;}
+.prov-precio{color:#0D2A5E;font-weight:600;min-width:80px;text-align:right;}
+.prov-fecha{font-size:11px;color:#aaa;min-width:80px;text-align:right;}
+.btn{padding:11px 18px;border-radius:8px;border:none;font-size:14px;cursor:pointer;font-weight:500;transition:all 0.15s;}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:#0D2A5E;color:#fff;}
+.btn-outline{background:#fff;border:1px solid #ccc;color:#333;}
+.btn-outline:hover{border-color:#0D2A5E;color:#0D2A5E;}
+.btn-danger{background:#fff;border:1px solid #e24b4a;color:#e24b4a;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-corte{background:#0D2A5E;color:#fff;padding:10px 20px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:700;letter-spacing:0.04em;display:flex;align-items:center;gap:8px;}
+.btn-corte:hover{background:#0a2050;}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.stat-mini{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:12px;text-align:center;}
+.stat-mini .val{font-size:22px;font-weight:700;color:#0D2A5E;}
+.stat-mini .val.red{color:#e24b4a;}
+.stat-mini .val.amber{color:#b06800;}
+.stat-mini label{font-size:11px;color:#888;display:block;margin-top:2px;}
+.receta-item{background:#fff;border:1px solid #e8e8e8;border-radius:10px;margin-bottom:8px;overflow:hidden;}
+.receta-header{padding:13px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.receta-nombre{font-size:14px;font-weight:600;}
+.receta-costo{font-size:13px;color:#0D2A5E;font-weight:700;}
+.receta-sin{font-size:11px;color:#aaa;}
+.receta-body{display:none;border-top:1px solid #f0f0f0;}
+.receta-body.open{display:block;}
+.receta-ing-list{padding:12px 16px;}
+.receta-ing-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:13px;}
+.receta-ing-row:last-child{border-bottom:none;}
+.receta-ing-nombre{flex:1;}
+.receta-ing-qty{font-weight:600;min-width:60px;text-align:right;}
+.receta-ing-unit{color:#888;min-width:50px;}
+.receta-ing-costo{color:#0D2A5E;font-size:12px;min-width:70px;text-align:right;}
+.foodcost-bar{background:#f0f4ff;border-radius:0 0 10px 10px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-size:13px;}
+.foodcost-bar strong{color:#0D2A5E;font-size:16px;}
+.orden-card{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.orden-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.orden-folio{font-size:16px;font-weight:700;color:#0D2A5E;}
+.orden-meta{font-size:12px;color:#888;margin-top:2px;}
+.estado-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;}
+.estado-borrador{background:#f0f0f0;color:#666;}
+.estado-enviada{background:#fff8ed;color:#b06800;}
+.estado-recibida{background:#eaf3de;color:#3b6d11;}
+.orden-items-preview{font-size:13px;color:#666;margin-bottom:10px;line-height:1.7;}
+.orden-total{font-size:17px;font-weight:700;}
+.orden-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+.mov-table{width:100%;border-collapse:collapse;font-size:13px;}
+.mov-table th{text-align:left;padding:9px 10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;border-bottom:2px solid #e8e8e8;}
+.mov-table td{padding:9px 10px;border-bottom:1px solid #f0f0f0;}
+.tipo-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.tipo-VENTA{background:#e8f0fe;color:#0D2A5E;}
+.tipo-ENTRADA{background:#eaf3de;color:#3b6d11;}
+.tipo-MERMA{background:#fff0f0;color:#e24b4a;}
+.tipo-AJUSTE{background:#f5f5f5;color:#555;}
+.mov-neg{color:#e24b4a;font-weight:600;}
+.mov-pos{color:#3b6d11;font-weight:600;}
+.config-section{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:18px;margin-bottom:16px;}
+.config-title{font-size:14px;font-weight:700;margin-bottom:14px;color:#0D2A5E;}
+.import-hint{font-size:12px;color:#888;margin-bottom:12px;line-height:1.6;}
+.cortes-table{width:100%;font-size:13px;border-collapse:collapse;}
+.cortes-table th{text-align:left;padding:8px 6px;font-size:11px;color:#888;border-bottom:2px solid #e8e8e8;font-weight:600;}
+.cortes-table td{padding:8px 6px;border-bottom:1px solid #f5f5f5;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:30px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.2s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+.empty{text-align:center;padding:40px 20px;color:#aaa;font-size:14px;}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border-radius:14px;padding:22px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:16px;color:#0D2A5E;}
+.modal-actions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+.divider{height:1px;background:#f0f0f0;margin:14px 0;}
+.form-row{display:flex;gap:10px;margin-bottom:10px;align-items:center;}
+.form-row label{font-size:12px;color:#666;min-width:90px;}
+.form-row input,.form-row select{flex:1;padding:9px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;}
+.form-row input:focus{border-color:#0D2A5E;}
+.corte-stat{display:flex;gap:24px;margin:12px 0;flex-wrap:wrap;}
+.corte-stat-item{text-align:center;}
+.corte-stat-item .num{font-size:28px;font-weight:700;color:#0D2A5E;}
+.corte-stat-item .lbl{font-size:11px;color:#888;}
+.corte-preview-table{width:100%;font-size:13px;border-collapse:collapse;margin:10px 0;}
+.corte-preview-table th{text-align:left;padding:7px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
+.corte-preview-table td{padding:7px 8px;border-bottom:1px solid #f5f5f5;}
+</style>
+</head>
+<body>
+
+<div class="preview-ribbon">⚡ MODO PREVIEW — Datos de demostración · Sin conexión requerida</div>
+
+<div class="header">
+  <div class="header-brand">
+    <h1>INSTINTO</h1>
+    <span class="header-tag">INVENTARIO</span>
+  </div>
+  <div class="header-right">
+    <span id="fecha" class="fecha"></span>
+    <span class="sync-dot"></span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('stock')">📦 Stock</button>
+  <button class="tab" onclick="switchTab('recetario')">📋 Recetario</button>
+  <button class="tab" onclick="switchTab('ordenes')">🛒 Órdenes</button>
+  <button class="tab" onclick="switchTab('movimientos')">📊 Movimientos</button>
+  <button class="tab" onclick="switchTab('config')">⚙️ Config</button>
+</div>
+
+<!-- STOCK -->
+<div id="screen-stock" class="screen active">
+  <div id="alertasBanner" class="alertas-banner">
+    <span style="font-size:14px;">⚠️</span>
+    <div class="alerta-badge"><span class="num">2</span> insumos en punto de reorden</div>
+    <div class="alerta-badge"><span class="num">3</span> precios sin revisar (+7 días)</div>
+  </div>
+  <div class="stat-row">
+    <div class="stat-mini"><div class="val">13</div><label>Insumos</label></div>
+    <div class="stat-mini"><div class="val red">2</div><label>Críticos</label></div>
+    <div class="stat-mini"><div class="val amber">1</div><label>Bajo stock</label></div>
+  </div>
+  <div class="sec-header">
+    <div class="filtros">
+      <button class="filtro-btn active" onclick="setFiltro('todos',this)">Todos</button>
+      <button class="filtro-btn" onclick="setFiltro('critico',this)">🔴 Crítico</button>
+      <button class="filtro-btn" onclick="setFiltro('bajo',this)">🟡 Bajo</button>
+      <button class="filtro-btn" onclick="setFiltro('precio',this)">⚠️ Precio</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-corte" onclick="abrirCorteModal()">📅 Corte del Día</button>
+      <button class="btn btn-outline btn-sm" onclick="toast('En producción: abre modal para agregar insumo')">+ Insumo</button>
+    </div>
+  </div>
+  <div id="insumoList" class="insumo-list"></div>
+</div>
+
+<!-- RECETARIO -->
+<div id="screen-recetario" class="screen">
+  <div class="sec-header">
+    <span class="sec-title">Recetario — Food Cost por Platillo</span>
+    <button class="btn btn-outline btn-sm" onclick="toast('En producción: agrega platillo personalizado')">+ Platillo</button>
+  </div>
+  <div id="recetaList"></div>
+</div>
+
+<!-- ÓRDENES -->
+<div id="screen-ordenes" class="screen">
+  <div class="sec-header">
+    <span class="sec-title">Órdenes de Compra</span>
+    <button class="btn btn-primary btn-sm" onclick="toast('En producción: abre formulario de nueva orden')">+ Nueva Orden</button>
+  </div>
+  <div id="ordenList"></div>
+</div>
+
+<!-- MOVIMIENTOS -->
+<div id="screen-movimientos" class="screen">
+  <div class="sec-header">
+    <span class="sec-title">Historial de Movimientos</span>
+    <button class="btn btn-outline btn-sm" onclick="toast('En producción: registra entrada, merma o ajuste')">+ Manual</button>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+    <select onchange="renderMovimientos(this.value)" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+      <option value="">Todos los tipos</option>
+      <option value="VENTA">Venta</option>
+      <option value="ENTRADA">Entrada</option>
+      <option value="MERMA">Merma</option>
+      <option value="AJUSTE">Ajuste</option>
+    </select>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="mov-table">
+      <thead><tr>
+        <th>Fecha</th><th>Tipo</th><th>Insumo</th>
+        <th style="text-align:right">Cantidad</th><th>Concepto</th><th>Responsable</th>
+      </tr></thead>
+      <tbody id="movTbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CONFIG -->
+<div id="screen-config" class="screen">
+  <div class="config-section">
+    <div class="config-title">📥 Importar Insumos desde Excel / CSV / JSON</div>
+    <p class="import-hint">
+      Sube tu archivo Excel o CSV con las columnas:<br>
+      <strong>nombre · unidad · stock · stockMin · costo</strong><br>
+      Los insumos existentes se actualizan; los nuevos se crean.
+    </p>
+    <div style="background:#f0f4ff;border:1px dashed #0D2A5E;border-radius:8px;padding:20px;text-align:center;color:#0D2A5E;font-size:13px;cursor:pointer;" onclick="toast('En producción: selecciona tu archivo Excel')">
+      📂 Haz clic para seleccionar archivo (.xlsx / .csv / .json)
+    </div>
+  </div>
+
+  <div class="config-section">
+    <div class="config-title">📅 Cortes Procesados</div>
+    <table class="cortes-table">
+      <thead><tr><th>Fecha</th><th style="text-align:center">Ventas</th><th style="text-align:center">Ítems</th><th style="text-align:center">Insumos</th><th>Procesado</th></tr></thead>
+      <tbody>
+        <tr><td style="font-weight:600">2026-03-23</td><td style="text-align:center">47</td><td style="text-align:center">83</td><td style="text-align:center">9</td><td style="font-size:11px;color:#aaa">23/03/2026 23:45</td></tr>
+        <tr><td style="font-weight:600">2026-03-22</td><td style="text-align:center">52</td><td style="text-align:center">91</td><td style="text-align:center">10</td><td style="font-size:11px;color:#aaa">22/03/2026 23:51</td></tr>
+        <tr><td style="font-weight:600">2026-03-21</td><td style="text-align:center">38</td><td style="text-align:center">67</td><td style="text-align:center">8</td><td style="font-size:11px;color:#aaa">21/03/2026 23:38</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Corte -->
+<div class="modal-overlay" id="modalCorte">
+  <div class="modal">
+    <h2>📅 Corte del Día</h2>
+    <div class="form-row" style="margin-bottom:14px;">
+      <label>Fecha</label>
+      <input type="date" id="corteFecha">
+    </div>
+    <div id="corteZone">
+      <div class="corte-stat">
+        <div class="corte-stat-item"><div class="num">47</div><div class="lbl">Ventas del día</div></div>
+        <div class="corte-stat-item"><div class="num">83</div><div class="lbl">Ítems vendidos</div></div>
+        <div class="corte-stat-item"><div class="num">9</div><div class="lbl">Insumos a descontar</div></div>
+      </div>
+      <table class="corte-preview-table">
+        <thead><tr><th>Insumo</th><th>Stock actual</th><th>−Descuento</th><th>Resultante</th></tr></thead>
+        <tbody>
+          <tr><td>Carne molida de res</td><td>3,840 g</td><td style="color:#e24b4a;">−4,000 g</td><td style="color:#e24b4a;font-weight:700;">0 g ⚠️</td></tr>
+          <tr><td>Bollo de hamburguesa</td><td>38 pza</td><td style="color:#e24b4a;">−47 pza</td><td style="color:#e24b4a;font-weight:700;">0 pza ⚠️</td></tr>
+          <tr><td>Queso americano</td><td>82 rebanada</td><td style="color:#e24b4a;">−63 rebanada</td><td style="font-weight:600;">19 rebanada</td></tr>
+          <tr><td>Papa</td><td>8,200 g</td><td style="color:#e24b4a;">−5,400 g</td><td style="font-weight:600;">2,800 g</td></tr>
+          <tr><td>Mayonesa</td><td>1,840 ml</td><td style="color:#e24b4a;">−470 ml</td><td style="font-weight:600;">1,370 ml</td></tr>
+          <tr><td>Aceite vegetal</td><td>4,200 ml</td><td style="color:#e24b4a;">−1,760 ml</td><td style="font-weight:600;">2,440 ml</td></tr>
+        </tbody>
+      </table>
+      <div style="background:#fff8ed;border:1px solid #e8a020;border-radius:8px;padding:10px 12px;font-size:12px;color:#b06800;margin-top:8px;">
+        ⚠️ Sin receta configurada: Mac &amp; Cheese tipo NY · Chicharrón Carnoso
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="form-row">
+      <label>PIN Admin</label>
+      <input type="password" placeholder="••••" style="max-width:120px;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalCorte')">Cancelar</button>
+      <button class="btn btn-primary" onclick="cerrarModal('modalCorte');toast('✅ Corte ejecutado — 47 ventas · 9 insumos descontados')">Ejecutar Corte</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATOS DEMO ──
+const INSUMOS = [
+  {id:'ins_001',nombre:'Carne molida de res',   unidad:'g',       stock:3840,  stockMin:2000, costo:0.14,  ultimaRevisionPrecio:'2026-03-17', proveedores:[{nombre:'Carnicería López',precio:140,unidadCompra:'kg',actualizacion:'2026-03-17'}]},
+  {id:'ins_002',nombre:'Bollo de hamburguesa',  unidad:'pza',     stock:38,    stockMin:50,   costo:4.5,   ultimaRevisionPrecio:'2026-03-24', proveedores:[{nombre:'Bimbo Distribución',precio:4.5,unidadCompra:'pza',actualizacion:'2026-03-24'}]},
+  {id:'ins_003',nombre:'Queso americano',       unidad:'rebanada',stock:82,    stockMin:50,   costo:2.8,   ultimaRevisionPrecio:'2026-03-18', proveedores:[]},
+  {id:'ins_004',nombre:'Queso suizo',           unidad:'rebanada',stock:45,    stockMin:30,   costo:3.2,   ultimaRevisionPrecio:'2026-03-24', proveedores:[]},
+  {id:'ins_005',nombre:'Pechuga de pollo',      unidad:'pza',     stock:12,    stockMin:20,   costo:38,    ultimaRevisionPrecio:'2026-03-24', proveedores:[{nombre:'Bachoco',precio:38,unidadCompra:'pza',actualizacion:'2026-03-24'}]},
+  {id:'ins_006',nombre:'Papa',                  unidad:'g',       stock:8200,  stockMin:5000, costo:0.018, ultimaRevisionPrecio:'2026-03-24', proveedores:[]},
+  {id:'ins_007',nombre:'Mayonesa',              unidad:'ml',      stock:1840,  stockMin:1000, costo:0.045, ultimaRevisionPrecio:'2026-03-16', proveedores:[]},
+  {id:'ins_008',nombre:'Sriracha',              unidad:'ml',      stock:680,   stockMin:500,  costo:0.12,  ultimaRevisionPrecio:'2026-03-24', proveedores:[]},
+  {id:'ins_009',nombre:'Sal',                   unidad:'g',       stock:1200,  stockMin:500,  costo:0.002, ultimaRevisionPrecio:'2026-03-24', proveedores:[]},
+  {id:'ins_010',nombre:'Pimienta negra',        unidad:'g',       stock:320,   stockMin:200,  costo:0.08,  ultimaRevisionPrecio:'2026-03-24', proveedores:[]},
+  {id:'ins_011',nombre:'Tocino',                unidad:'g',       stock:840,   stockMin:1000, costo:0.095, ultimaRevisionPrecio:'2026-03-15', proveedores:[]},
+  {id:'ins_012',nombre:'Aceite vegetal',        unidad:'ml',      stock:4200,  stockMin:3000, costo:0.022, ultimaRevisionPrecio:'2026-03-24', proveedores:[
+    {nombre:'Costco',   precio:180,unidadCompra:'bidón 20 lt',actualizacion:'2026-03-24'},
+    {nombre:"Sam's Club",precio:175,unidadCompra:'bidón 20 lt',actualizacion:'2026-03-20'},
+  ]},
+  {id:'ins_013',nombre:'Bastones de camote',    unidad:'g',       stock:1800,  stockMin:2000, costo:0.025, ultimaRevisionPrecio:'2026-03-24', proveedores:[]},
+];
+
+const RECETAS = [
+  {platillo:'Cheeseburger Clásica', ingredientes:[
+    {insumoId:'ins_001',nombre:'Carne molida de res',cantidad:80, unidad:'g'},
+    {insumoId:'ins_002',nombre:'Bollo de hamburguesa',cantidad:1, unidad:'pza'},
+    {insumoId:'ins_003',nombre:'Queso americano',    cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_007',nombre:'Mayonesa',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_008',nombre:'Sriracha',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:1, unidad:'g'},
+    {insumoId:'ins_010',nombre:'Pimienta negra',     cantidad:1, unidad:'g'},
+  ]},
+  {platillo:'Doble Doble', ingredientes:[
+    {insumoId:'ins_001',nombre:'Carne molida de res',cantidad:160,unidad:'g'},
+    {insumoId:'ins_002',nombre:'Bollo de hamburguesa',cantidad:1, unidad:'pza'},
+    {insumoId:'ins_003',nombre:'Queso americano',    cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_004',nombre:'Queso suizo',        cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_007',nombre:'Mayonesa',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_008',nombre:'Sriracha',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:1, unidad:'g'},
+    {insumoId:'ins_010',nombre:'Pimienta negra',     cantidad:1, unidad:'g'},
+  ]},
+  {platillo:'Hamburguesa con Tocino', ingredientes:[
+    {insumoId:'ins_001',nombre:'Carne molida de res',cantidad:160,unidad:'g'},
+    {insumoId:'ins_002',nombre:'Bollo de hamburguesa',cantidad:1, unidad:'pza'},
+    {insumoId:'ins_003',nombre:'Queso americano',    cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_004',nombre:'Queso suizo',        cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_011',nombre:'Tocino',             cantidad:40,unidad:'g'},
+    {insumoId:'ins_007',nombre:'Mayonesa',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:1, unidad:'g'},
+    {insumoId:'ins_010',nombre:'Pimienta negra',     cantidad:1, unidad:'g'},
+  ]},
+  {platillo:'Crispy Chicken Hot Honey', ingredientes:[
+    {insumoId:'ins_005',nombre:'Pechuga de pollo',   cantidad:1, unidad:'pza'},
+    {insumoId:'ins_002',nombre:'Bollo de hamburguesa',cantidad:1,unidad:'pza'},
+    {insumoId:'ins_007',nombre:'Mayonesa',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:1, unidad:'g'},
+  ]},
+  {platillo:'Vegetariana', ingredientes:[
+    {insumoId:'ins_002',nombre:'Bollo de hamburguesa',cantidad:1, unidad:'pza'},
+    {insumoId:'ins_003',nombre:'Queso americano',    cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_007',nombre:'Mayonesa',           cantidad:10,unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:1, unidad:'g'},
+  ]},
+  {platillo:'Papas Fritas', ingredientes:[
+    {insumoId:'ins_006',nombre:'Papa',               cantidad:200,unidad:'g'},
+    {insumoId:'ins_012',nombre:'Aceite vegetal',     cantidad:80, unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:2,  unidad:'g'},
+  ]},
+  {platillo:'Bastones de Camote', ingredientes:[
+    {insumoId:'ins_013',nombre:'Bastones de camote', cantidad:200,unidad:'g'},
+    {insumoId:'ins_012',nombre:'Aceite vegetal',     cantidad:80, unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:1,  unidad:'g'},
+  ]},
+  {platillo:'Burger + Papas + Refresco', ingredientes:[
+    {insumoId:'ins_001',nombre:'Carne molida de res',cantidad:80, unidad:'g'},
+    {insumoId:'ins_002',nombre:'Bollo de hamburguesa',cantidad:1, unidad:'pza'},
+    {insumoId:'ins_003',nombre:'Queso americano',    cantidad:1, unidad:'rebanada'},
+    {insumoId:'ins_006',nombre:'Papa',               cantidad:200,unidad:'g'},
+    {insumoId:'ins_012',nombre:'Aceite vegetal',     cantidad:80, unidad:'ml'},
+    {insumoId:'ins_007',nombre:'Mayonesa',           cantidad:10, unidad:'ml'},
+    {insumoId:'ins_009',nombre:'Sal',                cantidad:2,  unidad:'g'},
+    {insumoId:'ins_010',nombre:'Pimienta negra',     cantidad:1,  unidad:'g'},
+  ]},
+  {platillo:'Extra carne', ingredientes:[
+    {insumoId:'ins_001',nombre:'Carne molida de res',cantidad:80,unidad:'g'},
+  ]},
+];
+
+const ORDENES = [
+  {folio:'OC-2026-003',fecha:'2026-03-24',proveedor:'Carnicería López',
+    items:[{nombre:'Carne molida de res',unidad:'kg',cantidad:15,precioUnit:140,subtotal:2100}],
+    total:2100,estado:'enviada',notas:'Entrega jueves temprano'},
+  {folio:'OC-2026-002',fecha:'2026-03-20',proveedor:"Sam's Club",
+    items:[
+      {nombre:'Aceite vegetal',unidad:'bidón 20lt',cantidad:2,precioUnit:175,subtotal:350},
+      {nombre:'Bollo de hamburguesa',unidad:'pza',cantidad:200,precioUnit:4.5,subtotal:900},
+    ],
+    total:1250,estado:'recibida',notas:''},
+  {folio:'OC-2026-001',fecha:'2026-03-15',proveedor:'Costco',
+    items:[
+      {nombre:'Aceite vegetal',unidad:'bidón 20lt',cantidad:2,precioUnit:180,subtotal:360},
+      {nombre:'Mayonesa',unidad:'kg',cantidad:5,precioUnit:65,subtotal:325},
+      {nombre:'Sriracha',unidad:'litro',cantidad:2,precioUnit:120,subtotal:240},
+    ],
+    total:925,estado:'recibida',notas:''},
+];
+
+const MOVIMIENTOS = [
+  {fecha:'2026-03-24',hora:'14:30',tipo:'VENTA',  nombre:'Carne molida de res',cantidad:-960, unidad:'g',     concepto:'Corte 2026-03-23',referencia:'CORTE-2026-03-23',responsable:'Sistema'},
+  {fecha:'2026-03-24',hora:'14:30',tipo:'VENTA',  nombre:'Bollo de hamburguesa',cantidad:-47, unidad:'pza',   concepto:'Corte 2026-03-23',referencia:'CORTE-2026-03-23',responsable:'Sistema'},
+  {fecha:'2026-03-24',hora:'09:15',tipo:'ENTRADA',nombre:'Aceite vegetal',      cantidad:4000,unidad:'ml',    concepto:'OC-2026-002 Sam\'s Club',referencia:'OC-2026-002',responsable:'Tony'},
+  {fecha:'2026-03-23',hora:'14:22',tipo:'VENTA',  nombre:'Papa',                cantidad:-5400,unidad:'g',    concepto:'Corte 2026-03-22',referencia:'CORTE-2026-03-22',responsable:'Sistema'},
+  {fecha:'2026-03-23',hora:'14:22',tipo:'VENTA',  nombre:'Mayonesa',            cantidad:-470,unidad:'ml',    concepto:'Corte 2026-03-22',referencia:'CORTE-2026-03-22',responsable:'Sistema'},
+  {fecha:'2026-03-22',hora:'11:00',tipo:'MERMA',  nombre:'Pechuga de pollo',    cantidad:-3,  unidad:'pza',   concepto:'Vencimiento',referencia:'',responsable:'Tony'},
+  {fecha:'2026-03-21',hora:'08:30',tipo:'ENTRADA',nombre:'Carne molida de res', cantidad:8000,unidad:'g',     concepto:'Compra semanal',referencia:'OC-2026-001',responsable:'Tony'},
+  {fecha:'2026-03-21',hora:'08:30',tipo:'ENTRADA',nombre:'Queso americano',     cantidad:100, unidad:'rebanada',concepto:'Compra semanal',referencia:'',responsable:'Tony'},
+  {fecha:'2026-03-20',hora:'23:10',tipo:'AJUSTE', nombre:'Papa',                cantidad:500, unidad:'g',    concepto:'Corrección inventario físico',referencia:'',responsable:'Tony'},
+];
+
+// ── HELPERS ──
+const HOY = () => new Date().toISOString().slice(0,10);
+function semaforo(ins){ return ins.stock<ins.stockMin?'critico':ins.stock<ins.stockMin*1.5?'bajo':'ok'; }
+function precioAlerta(ins){ if(!ins.ultimaRevisionPrecio) return true; return Math.floor((Date.now()-new Date(ins.ultimaRevisionPrecio).getTime())/86400000)>=7; }
+function fmtNum(n){ const v=parseFloat(n)||0; return v%1===0?v.toLocaleString():v.toFixed(2).replace(/\.?0+$/,''); }
+function fmtMoney(n){ return '$'+(parseFloat(n)||0).toFixed(2); }
+function foodCost(r){
+  const map={}; INSUMOS.forEach(i=>{ map[i.id]=i; });
+  return (r.ingredientes||[]).reduce((s,ing)=>{ const ins=map[ing.insumoId]; return s+(ins&&ins.costo?ing.cantidad*ins.costo:0); },0);
+}
+
+// ── NAV ──
+let filtroActivo='todos';
+const TABS=['stock','recetario','ordenes','movimientos','config'];
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===tab));
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  if(tab==='stock')       renderStock();
+  if(tab==='recetario')   renderRecetario();
+  if(tab==='ordenes')     renderOrdenes();
+  if(tab==='movimientos') renderMovimientos('');
+}
+
+// ── RENDER STOCK ──
+function setFiltro(f,btn){
+  filtroActivo=f;
+  document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStock();
+}
+
+function renderStock(){
+  let lista=[...INSUMOS];
+  if(filtroActivo==='critico') lista=lista.filter(i=>semaforo(i)==='critico');
+  if(filtroActivo==='bajo')    lista=lista.filter(i=>semaforo(i)==='bajo'||semaforo(i)==='critico');
+  if(filtroActivo==='precio')  lista=lista.filter(i=>precioAlerta(i));
+  lista.sort((a,b)=>({critico:0,bajo:1,ok:2}[semaforo(a)]-{critico:0,bajo:1,ok:2}[semaforo(b)]));
+
+  document.getElementById('insumoList').innerHTML=lista.map(ins=>{
+    const sem=semaforo(ins); const alerta=precioAlerta(ins);
+    return `<div class="insumo-card ${sem}" id="card_${ins.id}">
+      <div class="insumo-row" onclick="toggleExpand('${ins.id}')">
+        <div class="semaforo ${sem}"></div>
+        <div class="insumo-nombre">${ins.nombre}${alerta?'<span class="insumo-precio-alerta">⚠️ Precio</span>':''}</div>
+        <div class="insumo-stock-info">
+          <div class="insumo-stock-num ${sem}">${fmtNum(ins.stock)} ${ins.unidad}</div>
+          <div class="insumo-min">mín ${fmtNum(ins.stockMin)}</div>
+        </div>
+        <div class="insumo-costo">${ins.costo?fmtMoney(ins.costo)+'/'+ins.unidad:'sin costo'}</div>
+        <div class="insumo-actions" onclick="event.stopPropagation()">
+          <button class="ico-btn" title="Entrada" onclick="toast('Entrada registrada para: '+decodeURIComponent('${encodeURIComponent(ins.nombre)}'))">+</button>
+          <button class="ico-btn" title="Merma"   onclick="toast('Merma registrada para: '+decodeURIComponent('${encodeURIComponent(ins.nombre)}'))">−</button>
+          <button class="ico-btn" title="Editar"  onclick="toast('Editar: '+decodeURIComponent('${encodeURIComponent(ins.nombre)}'))">✏️</button>
+        </div>
+      </div>
+      <div class="insumo-expand" id="expand_${ins.id}">
+        ${ins.proveedores&&ins.proveedores.length
+          ? `<div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-top:12px;margin-bottom:6px;">Proveedores</div>
+             <div class="prov-list">${ins.proveedores.map(p=>`
+               <div class="prov-row">
+                 <span class="prov-nombre">${p.nombre}</span>
+                 <span style="font-size:12px;color:#888">${p.unidadCompra||''}</span>
+                 <span class="prov-precio">${p.precio?fmtMoney(p.precio):'—'}</span>
+                 <span class="prov-fecha">${p.actualizacion||''}</span>
+               </div>`).join('')}
+             </div>`
+          : `<div style="font-size:12px;color:#aaa;padding:10px 0;">Sin proveedores registrados.</div>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleExpand(id){
+  document.getElementById('expand_'+id)?.classList.toggle('open');
+}
+
+// ── RENDER RECETARIO ──
+function renderRecetario(){
+  const map={}; INSUMOS.forEach(i=>{ map[i.id]=i; });
+  document.getElementById('recetaList').innerHTML=RECETAS.map((r,ri)=>{
+    const costo=foodCost(r);
+    return `<div class="receta-item">
+      <div class="receta-header" onclick="toggleReceta(${ri})">
+        <div>
+          <div class="receta-nombre">${r.platillo}</div>
+          <div style="font-size:11px;color:#888;margin-top:2px;">${r.ingredientes.length} ingredientes</div>
+        </div>
+        <div style="text-align:right">
+          <div class="receta-costo">${costo?fmtMoney(costo):'—'}</div>
+          <div style="font-size:10px;color:#aaa;">food cost</div>
+        </div>
+      </div>
+      <div class="receta-body" id="recetabody_${ri}">
+        <div class="receta-ing-list">
+          ${r.ingredientes.map(ing=>{
+            const ins=map[ing.insumoId];
+            const c=ins&&ins.costo?ing.cantidad*ins.costo:0;
+            return `<div class="receta-ing-row">
+              <div class="receta-ing-nombre">${ing.nombre}</div>
+              <div class="receta-ing-qty">${fmtNum(ing.cantidad)}</div>
+              <div class="receta-ing-unit">${ing.unidad}</div>
+              <div class="receta-ing-costo">${c?fmtMoney(c):'—'}</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="foodcost-bar">
+          <span style="color:#666;font-size:13px;">Food cost total</span>
+          <strong>${fmtMoney(costo)}</strong>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleReceta(ri){
+  document.getElementById('recetabody_'+ri)?.classList.toggle('open');
+}
+
+// ── RENDER ÓRDENES ──
+function renderOrdenes(){
+  document.getElementById('ordenList').innerHTML=ORDENES.map(o=>`
+    <div class="orden-card">
+      <div class="orden-header">
+        <div>
+          <div class="orden-folio">${o.folio}</div>
+          <div class="orden-meta">${o.proveedor} · ${o.fecha}</div>
+        </div>
+        <span class="estado-badge estado-${o.estado}">${o.estado.toUpperCase()}</span>
+      </div>
+      <div class="orden-items-preview">${o.items.slice(0,3).map(it=>`${it.nombre} ×${it.cantidad}`).join(' · ')}${o.items.length>3?'...':''}</div>
+      <div class="orden-total">${fmtMoney(o.total)}</div>
+      <div class="orden-actions">
+        <button class="btn btn-outline btn-sm" onclick="toast('Ver detalle: '+decodeURIComponent('${encodeURIComponent(o.folio)}'))">Ver detalle</button>
+        ${o.estado!=='recibida'?`<button class="btn btn-outline btn-sm" onclick="toast('Editar orden '+decodeURIComponent('${encodeURIComponent(o.folio)}'))">Editar</button>`:''}
+        <button class="btn btn-outline btn-sm" onclick="imprimirOrden('${o.folio}')">🖨 Exportar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── IMPRIMIR ORDEN ──
+function imprimirOrden(folio){
+  const o=ORDENES.find(x=>x.folio===folio); if(!o) return;
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>${o.folio}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;padding:40px;color:#1a1a1a;font-size:13px;}.logo{font-size:26px;font-weight:900;letter-spacing:.15em;color:#0D2A5E;}.sub{font-size:12px;color:#888;margin-bottom:24px;}.folio{font-size:22px;font-weight:700;color:#0D2A5E;margin:16px 0 4px;}.meta{font-size:13px;color:#555;margin-bottom:20px;}table{width:100%;border-collapse:collapse;margin:16px 0;}thead tr{background:#0D2A5E;color:#fff;}th{padding:10px 12px;text-align:left;font-size:12px;font-weight:600;}td{padding:9px 12px;border-bottom:1px solid #e0e0e0;}.total-row td{font-weight:700;background:#f0f4ff;font-size:15px;}.footer{margin-top:50px;display:grid;grid-template-columns:1fr 1fr;gap:60px;}.firma{border-top:1px solid #999;padding-top:6px;font-size:11px;color:#888;margin-top:8px;}@media print{.no-print{display:none;}}</style>
+  </head><body>
+  <div class="logo">INSTINTO</div><div class="sub">Operadora Chapa · Orden de Compra</div>
+  <div class="folio">${o.folio}</div>
+  <div class="meta"><strong>Fecha:</strong> ${o.fecha} &nbsp;&nbsp; <strong>Proveedor:</strong> <span style="color:#F5A020;font-weight:700;">${o.proveedor}</span> &nbsp;&nbsp; <strong>Estado:</strong> ${o.estado.toUpperCase()}${o.notas?`<br><strong>Notas:</strong> ${o.notas}`:''}</div>
+  <table><thead><tr><th>#</th><th>Insumo</th><th>Unidad</th><th style="text-align:right">Cant.</th><th style="text-align:right">P. Unit.</th><th style="text-align:right">Subtotal</th></tr></thead>
+  <tbody>${o.items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.nombre}</td><td>${it.unidad}</td><td style="text-align:right;font-weight:600;">${fmtNum(it.cantidad)}</td><td style="text-align:right;">${fmtMoney(it.precioUnit||0)}</td><td style="text-align:right;font-weight:600;">${fmtMoney(it.subtotal||0)}</td></tr>`).join('')}
+  <tr class="total-row"><td colspan="5" style="text-align:right;">TOTAL</td><td style="text-align:right;color:#0D2A5E;">${fmtMoney(o.total)}</td></tr></tbody></table>
+  <div class="footer"><div><div style="font-size:12px;color:#888;margin-bottom:40px;">Elaboró</div><div class="firma">Nombre y firma</div></div><div><div style="font-size:12px;color:#888;margin-bottom:40px;">Autorizó</div><div class="firma">Nombre y firma</div></div></div><br><br>
+  <button class="no-print" onclick="window.print()" style="padding:10px 24px;background:#0D2A5E;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-right:10px;">🖨 Imprimir</button>
+  <button class="no-print" onclick="window.close()" style="padding:10px 24px;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:14px;cursor:pointer;">Cerrar</button>
+  </body></html>`;
+  const w=window.open('','_blank'); w.document.write(html); w.document.close();
+}
+
+// ── RENDER MOVIMIENTOS ──
+function renderMovimientos(filtroTipo){
+  let lista=[...MOVIMIENTOS];
+  if(filtroTipo) lista=lista.filter(m=>m.tipo===filtroTipo);
+  document.getElementById('movTbody').innerHTML=lista.map(m=>`<tr>
+    <td>${m.fecha}<br><span style="font-size:11px;color:#aaa;">${m.hora}</span></td>
+    <td><span class="tipo-badge tipo-${m.tipo}">${m.tipo}</span></td>
+    <td>${m.nombre}</td>
+    <td class="${m.cantidad<0?'mov-neg':'mov-pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
+    <td>${m.concepto||''} ${m.referencia?`<span style="font-size:11px;color:#aaa;">(${m.referencia})</span>`:''}</td>
+    <td>${m.responsable||''}</td>
+  </tr>`).join('');
+}
+
+// ── MODAL CORTE ──
+function abrirCorteModal(){
+  document.getElementById('corteFecha').value=HOY();
+  document.getElementById('modalCorte').classList.add('open');
+}
+function cerrarModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); });
+});
+
+// ── TOAST ──
+let tt=null;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ── FECHA ──
+document.getElementById('fecha').textContent=new Date().toLocaleDateString('es-MX',{weekday:'short',day:'numeric',month:'short'});
+
+// ── INIT ──
+renderStock();
+</script>
+</body>
+</html>

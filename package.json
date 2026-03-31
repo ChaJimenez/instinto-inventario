@@ -1,0 +1,17 @@
+{
+  "name": "instinto-inventario",
+  "version": "1.0.0",
+  "description": "Sistema de Inventario Instinto — Operadora Chapa",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node api/server-local.js"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.34.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "vercel": "^39.0.0"
+  }
+}
