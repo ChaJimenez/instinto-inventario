@@ -266,6 +266,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <button class="btn-corte" onclick="abrirCorte()">📅 Corte del Día</button>
       <button class="btn btn-naranja btn-sm" onclick="abrirLeerNota()">📷 Leer nota</button>
       <button class="btn btn-outline btn-sm" onclick="abrirConteoInicial()">📋 Conteo inicial</button>
+      <button class="btn btn-outline btn-sm" onclick="cargarSemillaInventario()" title="Cargar inventario físico 31 Mar 2026">🌱 Semilla 31-Mar</button>
       <button class="btn btn-outline btn-sm" onclick="abrirModalInsumo()">+ Insumo</button>
     </div>
   </div>
@@ -641,30 +642,107 @@ const HOY = () => new Date().toISOString().slice(0,10);
 // Carne: 44kg/sem · Pollo: 6.8kg/sem · Bollos: 392/sem · Papa: 44kg/sem
 // Camote: 2kg/sem · Tocino: 4.3kg/sem · Q.Americano: 346/sem · Q.Suizo: 147/sem
 const DEFAULT_INSUMOS = [
+  // ── CARNES ──
   {id:'ins_001',nombre:'Carne molida de res',   unidad:'g',      stock:0, stockMin:44000, costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
     {id:'prov_c01',nombre:'Alma Alexis',precio:0,unidadCompra:'kg',actualizacion:HOY()},
   ]},
-  {id:'ins_002',nombre:'Bollo de hamburguesa',  unidad:'pza',    stock:0, stockMin:400,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
-  {id:'ins_003',nombre:'Queso americano',        unidad:'rebanada',stock:0,stockMin:350,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+  {id:'ins_005',nombre:'Pechuga de pollo',       unidad:'g',      stock:0, stockMin:7000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_011',nombre:'Tocino',                 unidad:'g',      stock:0, stockMin:4300,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_014',nombre:'Papada de cerdo',        unidad:'g',      stock:0, stockMin:5000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── PAN ──
+  {id:'ins_002',nombre:'Bollo de hamburguesa',   unidad:'pza',    stock:0, stockMin:400,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_047',nombre:'Pan de caja blanco',     unidad:'pza',    stock:0, stockMin:20,    costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── LÁCTEOS ──
+  {id:'ins_003',nombre:'Queso americano',        unidad:'pqt',    stock:0, stockMin:4,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
     {id:'prov_q01',nombre:'Kirkland (Costco)',precio:0,unidadCompra:'paquete',actualizacion:HOY()},
   ]},
-  {id:'ins_004',nombre:'Queso suizo',            unidad:'rebanada',stock:0,stockMin:150,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
+  {id:'ins_004',nombre:'Queso suizo',            unidad:'pqt',    stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
     {id:'prov_q02',nombre:'Kirkland (Costco)',precio:0,unidadCompra:'paquete',actualizacion:HOY()},
   ]},
-  {id:'ins_005',nombre:'Pechuga de pollo',       unidad:'g',      stock:0, stockMin:7000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_041',nombre:'Queso cheddar',          unidad:'pqt',    stock:0, stockMin:3,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_042',nombre:'Queso mozzarella',       unidad:'pqt',    stock:0, stockMin:4,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_043',nombre:'Queso parmesano',        unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_044',nombre:'Leche',                  unidad:'ml',     stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_045',nombre:'Mantequilla',            unidad:'caja',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_046',nombre:'Crema para batir',       unidad:'ml',     stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── PAPA Y CAMOTE ──
   {id:'ins_006',nombre:'Papa',                   unidad:'g',      stock:0, stockMin:44000, costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
     {id:'prov_p01',nombre:'Oscar Caballero',precio:0,unidadCompra:'costal',actualizacion:HOY()},
   ]},
-  {id:'ins_007',nombre:'Mayonesa',               unidad:'ml',     stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
-  {id:'ins_008',nombre:'Sriracha',               unidad:'ml',     stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
-  {id:'ins_009',nombre:'Sal',                    unidad:'g',      stock:0, stockMin:1000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
-  {id:'ins_010',nombre:'Pimienta negra',         unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
-  {id:'ins_011',nombre:'Tocino',                 unidad:'g',      stock:0, stockMin:4300,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_013',nombre:'Bastones de camote',     unidad:'caja',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── VERDURAS ──
+  {id:'ins_015',nombre:'Jitomate',               unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_016',nombre:'Cebolla',                unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_017',nombre:'Col morada',             unidad:'pza',    stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_018',nombre:'Lechuga italiana',       unidad:'pza',    stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_019',nombre:'Cebollín',               unidad:'g',      stock:0, stockMin:200,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_020',nombre:'Perejil',                unidad:'manojo', stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_021',nombre:'Cilantro',               unidad:'manojo', stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_022',nombre:'Ajo',                    unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_023',nombre:'Chile de árbol',         unidad:'g',      stock:0, stockMin:200,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_024',nombre:'Chile morita',           unidad:'g',      stock:0, stockMin:200,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_025',nombre:'Chile guajillo',         unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── FRUTA ──
+  {id:'ins_026',nombre:'Pulpa maracuyá',         unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_027',nombre:'Pulpa mango',            unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_028',nombre:'Pulpa fresa',            unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_029',nombre:'Pulpa tamarindo',        unidad:'g',      stock:0, stockMin:1000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_030',nombre:'Pulpa guanábana',        unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_031',nombre:'Pulpa frutos rojos',     unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_032',nombre:'Piña',                   unidad:'pza',    stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_033',nombre:'Sandía',                 unidad:'pza',    stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_034',nombre:'Pera',                   unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_035',nombre:'Frambuesa',              unidad:'domo',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_036',nombre:'Zarzamora',              unidad:'domo',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_037',nombre:'Toronja',                unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_038',nombre:'Naranja',                unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_039',nombre:'Limón',                  unidad:'g',      stock:0, stockMin:3000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_040',nombre:'Melón',                  unidad:'pza',    stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── SALSAS Y CONDIMENTOS ──
+  {id:'ins_007',nombre:'Mayonesa',               unidad:'galon',  stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_008',nombre:'Sriracha',               unidad:'pza',    stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_048',nombre:'Ranch',                  unidad:'galon',  stock:0, stockMin:0.5,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_049',nombre:'Mostaza',                unidad:'galon',  stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_050',nombre:'Catsup',                 unidad:'galon',  stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_051',nombre:'Soya',                   unidad:'ml',     stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_052',nombre:'Buffalo',                unidad:'galon',  stock:0, stockMin:0.5,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_053',nombre:'BBQ',                    unidad:'galon',  stock:0, stockMin:0.5,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_069',nombre:'Clamato',                unidad:'pza',    stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_070',nombre:'Worcestershire',         unidad:'ml',     stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_071',nombre:'Maggi',                  unidad:'ml',     stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_072',nombre:'Tabasco',                unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_073',nombre:'Tajín',                  unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_074',nombre:'Jarabe natural',         unidad:'ml',     stock:0, stockMin:1000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_078',nombre:'Pepinillos',             unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_079',nombre:'Miel',                   unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── ABARROTES ──
+  {id:'ins_054',nombre:'Puré de tomate',         unidad:'bolsa',  stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_075',nombre:'Azúcar',                 unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_076',nombre:'Oreo',                   unidad:'caja',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_077',nombre:'Codito',                 unidad:'bolsa',  stock:0, stockMin:4,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── ACEITE ──
   {id:'ins_012',nombre:'Aceite vegetal',         unidad:'ml',     stock:0, stockMin:5000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[
     {id:'prov_a01',nombre:'Costco',precio:0,unidadCompra:'bidón',actualizacion:HOY()},
     {id:'prov_a02',nombre:"Sam's Club",precio:0,unidadCompra:'bidón',actualizacion:HOY()},
   ]},
-  {id:'ins_013',nombre:'Bastones de camote',     unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── HARINAS ──
+  {id:'ins_055',nombre:'Harina para hotcakes',   unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_056',nombre:'Harina de trigo',        unidad:'g',      stock:0, stockMin:2000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_057',nombre:'Fécula de maíz',         unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_058',nombre:'Fécula de tapioca',      unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── ESPECIAS ──
+  {id:'ins_009',nombre:'Sal',                    unidad:'g',      stock:0, stockMin:1000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_010',nombre:'Pimienta negra',         unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_060',nombre:'Paprika',                unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_061',nombre:'Ajo en polvo',           unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_062',nombre:'Cebolla en polvo',       unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_063',nombre:'Consomé de pollo',       unidad:'g',      stock:0, stockMin:200,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_064',nombre:'Comino',                 unidad:'g',      stock:0, stockMin:200,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_065',nombre:'Bicarbonato de sodio',   unidad:'g',      stock:0, stockMin:300,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_059',nombre:'Polvo para hornear',     unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_066',nombre:'Panko',                  unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_067',nombre:'GMS',                    unidad:'g',      stock:0, stockMin:200,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  {id:'ins_068',nombre:'Pan molido',             unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
 ];
 
 // Gramajes según recetario estandarizado Instinto:
@@ -769,6 +847,89 @@ const DEFAULT_RECETAS = [
     {insumoId:'ins_011',nombre:'Tocino',cantidad:15,unidad:'g'},
   ]},
 ];
+
+// Inventario físico del 31 de marzo 2026 — { insumoId: stock }
+const INVENTARIO_31_MAR = {
+  'ins_001': 2000,   // Carne molida: 2 kg
+  'ins_002': 125,    // Bollos brioche: 125 pza
+  'ins_003': 9.3,    // Queso americano: 9.3 pqt
+  'ins_004': 5.6,    // Queso suizo: 5.6 pqt
+  'ins_005': 7500,   // Pollo: 7.5 kg
+  'ins_006': 60000,  // Papa: 60 kg
+  'ins_007': 0.74,   // Mayonesa: 0.74 galon
+  'ins_008': 5.02,   // Sriracha: 5.02 pza
+  'ins_009': 30,     // Sal: 0.03 kg → 30 g
+  'ins_010': 1700,   // Pimienta: 1.7 kg
+  'ins_011': 6000,   // Tocino: 6 kg
+  'ins_012': 0,      // Aceite: no listado
+  'ins_013': 0,      // Bastones camote: 0 cja
+  'ins_014': 10000,  // Papada: 10 kg
+  'ins_015': 5700,   // Jitomate: 5.7 kg
+  'ins_016': 4600,   // Cebolla: 4.6 kg
+  'ins_017': 1,      // Col morada: 1 pza
+  'ins_018': 0,      // Lechuga italiana: 0 pza
+  'ins_019': 500,    // Cebollín: 0.5 kg
+  'ins_020': 1,      // Perejil: 1 manojo
+  'ins_021': 1,      // Cilantro: 1 manojo
+  'ins_022': 1000,   // Ajo: 1 kg
+  'ins_023': 1000,   // Chile de árbol: 1 kg
+  'ins_024': 1000,   // Chile morita: 1 kg
+  'ins_025': 1000,   // Chile guajillo: 1 kg
+  'ins_026': 4000,   // Pulpa maracuyá: 4 kg
+  'ins_027': 4000,   // Pulpa mango: 4 kg
+  'ins_028': 5000,   // Pulpa fresa: 5 kg
+  'ins_029': 2000,   // Pulpa tamarindo: 2 kg
+  'ins_030': 4000,   // Pulpa guanábana: 4 kg
+  'ins_031': 1000,   // Pulpa frutos rojos: 1 kg
+  'ins_032': 2,      // Piña: 2 pza
+  'ins_033': 2,      // Sandía: 2 pza
+  'ins_034': 0,      // Pera: 0
+  'ins_035': 1,      // Frambuesa: 1 domo
+  'ins_036': 1,      // Zarzamora: 1 domo
+  'ins_037': 4000,   // Toronja: 4 kg
+  'ins_038': 3000,   // Naranja: 3 kg
+  'ins_039': 7000,   // Limón: 7 kg
+  'ins_040': 2,      // Melón: 2 pza
+  'ins_041': 8.2,    // Queso cheddar: 8.2 pqt
+  'ins_042': 12.3,   // Queso mozzarella: 12.3 pqt
+  'ins_043': 0.5,    // Queso parmesano: 0.5 bote
+  'ins_044': 8000,   // Leche: 8 lt → 8000 ml
+  'ins_045': 3.4,    // Mantequilla: 3.4 caja
+  'ins_046': 0,      // Crema para batir: 0
+  'ins_047': 2,      // Pan de caja: 2 pza
+  'ins_048': 0.5,    // Ranch: 0.5 galon
+  'ins_049': 2,      // Mostaza: 2 galon
+  'ins_050': 9.23,   // Catsup: 9.23 galon
+  'ins_051': 700,    // Soya: 0.7 lt → 700 ml
+  'ins_052': 0.2,    // Buffalo: 0.2 galon
+  'ins_053': 1,      // BBQ: 1 galon
+  'ins_054': 4,      // Puré de tomate: 4 bolsa
+  'ins_055': 1000,   // Harina hotcakes: 1 kg
+  'ins_056': 10000,  // Harina de trigo: 10 kg
+  'ins_057': 1000,   // Fécula de maíz: 1 kg
+  'ins_058': 1000,   // Fécula de tapioca: 1 kg
+  'ins_059': 0.7,    // Polvo para hornear: 0.7 bote
+  'ins_060': 1220,   // Paprika: 1.22 kg
+  'ins_061': 1400,   // Ajo en polvo: 1.4 kg
+  'ins_062': 2500,   // Cebolla en polvo: 2.5 kg
+  'ins_063': 690,    // Consomé de pollo: 0.69 kg
+  'ins_064': 1000,   // Comino: 1 kg
+  'ins_065': 1540,   // Bicarbonato: 1.54 kg
+  'ins_066': 700,    // Panko: 0.7 kg
+  'ins_067': 800,    // GMS: 0.8 kg
+  'ins_068': 1400,   // Pan molido: 1.4 kg
+  'ins_069': 2,      // Clamato: 2 pza
+  'ins_070': 1000,   // Worcestershire: 1 lt → 1000 ml
+  'ins_071': 1000,   // Maggi: 1 lt → 1000 ml
+  'ins_072': 1,      // Tabasco: 1 bote
+  'ins_073': 2,      // Tajín: 2 bote
+  'ins_074': 2000,   // Jarabe natural: 2 lt → 2000 ml
+  'ins_075': 1000,   // Azúcar: 1 kg
+  'ins_076': 3,      // Oreo: 3 caja
+  'ins_077': 16,     // Codito: 16 bolsa
+  'ins_078': 1.7,    // Pepinillos: 1.7 bote
+  'ins_079': 1,      // Miel: 1 bote
+};
 
 // ══════════════════════════════════════
 // ESTADO
@@ -1765,6 +1926,55 @@ async function limpiarMovimientos(){
   await guardar();
   renderMovimientos();
   toast('Historial borrado ✓');
+}
+
+// ══════════════════════════════════════
+// SEMILLA: INVENTARIO FÍSICO 31 MAR 2026
+// ══════════════════════════════════════
+async function cargarSemillaInventario(){
+  if(!confirm('¿Cargar inventario físico del 31 de marzo?\n\nEsto:\n• Establece el stock inicial de todos los insumos\n• Agrega insumos faltantes\n• Solo descuenta ventas desde el 31 de marzo en adelante')) return;
+
+  // Asegurarse de que todos los insumos del DEFAULT estén en la lista
+  const mapa = {};
+  insumos.forEach(i => { mapa[i.id] = i; });
+  DEFAULT_INSUMOS.forEach(d => {
+    if(!mapa[d.id]) mapa[d.id] = {...d, ultimaRevisionPrecio:HOY()};
+  });
+  insumos = Object.values(mapa);
+
+  // Aplicar stock del conteo 31 Mar 2026
+  insumos.forEach(ins => {
+    if(INVENTARIO_31_MAR[ins.id] !== undefined){
+      const stockAntes = ins.stock;
+      ins.stock = INVENTARIO_31_MAR[ins.id];
+      // Registrar ajuste solo si hay diferencia
+      if(ins.stock !== stockAntes){
+        movimientos.push({
+          id: genId('mov'),
+          fecha: '2026-03-31',
+          hora: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+          tipo: 'AJUSTE',
+          insumoId: ins.id,
+          nombre: ins.nombre,
+          cantidad: ins.stock - stockAntes,
+          unidad: ins.unidad,
+          responsable: 'Conteo físico',
+          concepto: 'Inventario inicial 31 Mar 2026',
+          referencia: 'SEED-31MAR',
+          stockAntes,
+          stockDespues: ins.stock,
+        });
+      }
+    }
+  });
+
+  // Configurar fecha de inicio — no procesar ventas anteriores al 31 Mar
+  config.fechaInicioVentas = '2026-03-31';
+
+  await guardar();
+  renderStock();
+  cargarStockLive();
+  toast('✓ Inventario 31 Mar cargado — ventas se descuentan desde esa fecha');
 }
 
 // ══════════════════════════════════════

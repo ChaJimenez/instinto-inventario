@@ -83,17 +83,22 @@ app.get('/api/lastUpdate', async (req, res) => {
 // ── Stock en tiempo real: stock actual − consumo desde último corte ──
 app.get('/api/stock-live', async (req, res) => {
   try {
-    const [insumosRaw, recetasRaw, cortesRaw, posVentas] = await Promise.all([
+    const [insumosRaw, recetasRaw, cortesRaw, posVentas, configRaw] = await Promise.all([
       kv.get(K.insumos),
       kv.get(K.recetas),
       kv.get(K.cortes),
       kv.get(K.posVentas),
+      kv.get(K.config),
     ]);
 
     const insumos  = insumosRaw  || [];
     const recetas  = recetasRaw  || [];
     const cortes   = cortesRaw   || [];
     const ventas   = posVentas   || [];
+    const config   = configRaw   || {};
+
+    // Solo procesar ventas desde esta fecha en adelante (evita pre-inventario)
+    const fechaInicio = config.fechaInicioVentas || '2000-01-01';
 
     // Fecha del último corte procesado
     const ultimoCorte = cortes.length
@@ -114,11 +119,12 @@ app.get('/api/stock-live', async (req, res) => {
       return new Date(v.id).toISOString().slice(0,10);
     };
 
-    // Ventas del POS que NO han sido procesadas en un corte
+    // Ventas del POS que NO han sido procesadas en un corte y son >= fechaInicio
     const fechasProcesadas = new Set(cortes.map(c=>c.fecha));
     const ventasPendientes = ventas.filter(v => {
       if(v.excluida) return false;
-      return !fechasProcesadas.has(normalizarFecha(v));
+      const fv = normalizarFecha(v);
+      return fv >= fechaInicio && !fechasProcesadas.has(fv);
     });
 
     // Mapa recetas: platillo → ingredientes
@@ -205,6 +211,12 @@ app.post('/api/corte', async (req, res) => {
       return res.status(400).json({ error: `El corte del ${fecha} ya fue procesado.` });
     }
 
+    // Verificar que la fecha no sea anterior al inicio del inventario
+    const fechaInicio = config.fechaInicioVentas || '2000-01-01';
+    if (fecha < fechaInicio) {
+      return res.status(400).json({ error: `No se pueden procesar cortes anteriores al inicio del inventario (${fechaInicio}).` });
+    }
+
     // Filtrar ventas del día solicitado (normalizando formato DD/M/YYYY o YYYY-MM-DD)
     const normFecha = (v) => {
       if(v.fecha) {
@@ -217,7 +229,7 @@ app.post('/api/corte', async (req, res) => {
       }
       return new Date(v.id).toISOString().slice(0,10);
     };
-    const ventasHoy = ventas.filter(v => normFecha(v) === fecha);
+    const ventasHoy = ventas.filter(v => normFecha(v) === fecha && normFecha(v) >= fechaInicio);
 
     // Mapa de recetas: platillo → ingredientes
     const recetaMap = {};
