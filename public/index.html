@@ -125,6 +125,25 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .tipo-MERMA{background:#fff0f0;color:#e24b4a;}
 .tipo-AJUSTE{background:#f5f5f5;color:#555;}
 .tipo-CORTE{background:#fff8ed;color:#b06800;}
+.tipo-RESET_RECETARIO{background:#e8f7f0;color:#1b6b47;}
+/* ── RECETARIO PDF REVIEW ── */
+.rdiff-table{width:100%;border-collapse:collapse;font-size:13px;}
+.rdiff-table th{text-align:left;padding:7px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
+.rdiff-table td{padding:7px 8px;border-bottom:1px solid #f5f5f5;vertical-align:top;}
+.rbadge-nuevo{background:#eaf3de;color:#3b6d11;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.rbadge-actualizado{background:#fff8ed;color:#b06800;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.rbadge-igual{background:#f5f5f5;color:#888;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.rbadge-duplicado{background:#fff0f0;color:#e24b4a;font-size:10px;padding:1px 8px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.rbadge-ins{background:#e8f0fe;color:#0D2A5E;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700;white-space:nowrap;}
+.rdiff-ing{font-size:12px;color:#555;line-height:1.7;}
+.rdiff-ing .warn{color:#b06800;}
+/* ── EDITAR RECETARIO EN TABLA ── */
+.edit-rec-table{width:100%;border-collapse:collapse;font-size:13px;}
+.edit-rec-table th{background:#f9f9f7;text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:2px solid #e8e8e8;font-weight:600;position:sticky;top:0;}
+.edit-rec-table td{padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.edit-rec-table input[type=number]{width:72px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;text-align:right;outline:none;}
+.edit-rec-table input[type=number]:focus{border-color:#0D2A5E;}
+.edit-rec-sep{background:#f5f5f3;font-weight:700;color:#0D2A5E;font-size:12px;padding:8px 10px!important;}
 .mov-cantidad{font-weight:600;}
 .mov-cantidad.neg{color:#e24b4a;}
 .mov-cantidad.pos{color:#3b6d11;}
@@ -284,7 +303,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 <div id="screen-recetario" class="screen">
   <div class="sec-header">
     <span class="sec-title">Recetario — Food Cost por Platillo</span>
-    <button class="btn btn-outline btn-sm" onclick="abrirModalRecetaNueva()">+ Platillo</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-naranja btn-sm" onclick="abrirRecetarioPDF()">📋 Subir PDF</button>
+      <button class="btn btn-outline btn-sm" onclick="abrirEditarRecetario()">✏️ Editar en tabla</button>
+      <button class="btn btn-outline btn-sm" onclick="abrirModalRecetaNueva()">+ Platillo</button>
+    </div>
   </div>
   <div id="recetaList"></div>
 </div>
@@ -316,6 +339,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <option value="MERMA">Merma</option>
       <option value="AJUSTE">Ajuste</option>
       <option value="CORTE">Corte</option>
+      <option value="RESET_RECETARIO">Reset Recetario</option>
     </select>
     <input type="date" id="movFiltroFecha" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
     <button class="btn btn-outline btn-sm" onclick="document.getElementById('movFiltroTipo').value='';document.getElementById('movFiltroFecha').value='';renderMovimientos();">Limpiar</button>
@@ -611,6 +635,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
           <th>Insumo</th>
           <th style="text-align:right;">Cantidad</th>
           <th>Unidad</th>
+          <th></th>
         </tr></thead>
         <tbody id="notaConfirmBody"></tbody>
       </table>
@@ -708,6 +733,97 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('modalVentasPDF')">Cancelar</button>
       <button class="btn btn-primary" id="btnConfirmarVentasPDF" style="display:none;" onclick="confirmarVentasPDF()">✓ Descontar inventario</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Subir Recetario PDF -->
+<div class="modal-overlay" id="modalRecetarioPDF">
+  <div class="modal modal-lg">
+    <h2>📋 Subir Recetario Completo (PDF)</h2>
+
+    <!-- Step 1: Subir PDF -->
+    <div id="recPDFStep1">
+      <p style="font-size:13px;color:#666;margin-bottom:14px;">
+        Sube el PDF del recetario estandarizado. Claude lo leerá, comparará con las recetas actuales y te pedirá confirmación antes de aplicar cualquier cambio.
+      </p>
+      <div class="nota-drop" id="recPDFDrop" onclick="document.getElementById('recPDFFile').click()">
+        <div style="font-size:36px;margin-bottom:8px;">📋</div>
+        <div style="font-size:14px;color:#888;font-weight:500;">Arrastra el PDF aquí o toca para seleccionar</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px;">PDF del recetario estandarizado</div>
+        <input type="file" id="recPDFFile" accept=".pdf,application/pdf" style="display:none" onchange="procesarRecetarioPDF(this)">
+      </div>
+      <div id="recPDFLoading" style="display:none;text-align:center;padding:28px;color:#888;font-size:14px;">
+        <div style="font-size:28px;margin-bottom:8px;">🔍</div>
+        <div>Leyendo recetario con IA...</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px;">Esto puede tardar unos segundos</div>
+      </div>
+      <div id="recPDFError" style="display:none;background:#fff0f0;border:1px solid #fcc;border-radius:8px;padding:12px;font-size:13px;color:#e24b4a;margin-top:10px;"></div>
+    </div>
+
+    <!-- Step 2: Revisar y confirmar cambios -->
+    <div id="recPDFStep2" style="display:none;">
+      <!-- Resumen de cambios -->
+      <div id="recPDFResumen" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f9f9f7;border-radius:8px;"></div>
+
+      <!-- Insumos nuevos detectados -->
+      <div id="recPDFInsumosNuevos" style="display:none;background:#e8f0fe;border:1px solid #b0c4f5;border-radius:8px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:700;color:#0D2A5E;margin-bottom:8px;">⚠️ Ingredientes no encontrados en catálogo — se darán de alta automáticamente si confirmas:</div>
+        <div id="recPDFInsumosNuevosLista" style="font-size:12px;color:#333;line-height:1.9;"></div>
+      </div>
+
+      <!-- Tabla de platillos -->
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Platillos detectados</div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;">
+        <table class="rdiff-table">
+          <thead><tr>
+            <th style="width:28px;"><input type="checkbox" id="recPDFCheckAll" onchange="recPDFToggleAll(this.checked)" title="Seleccionar / deseleccionar todos"></th>
+            <th>Platillo</th>
+            <th>Estado</th>
+            <th>Ingredientes</th>
+          </tr></thead>
+          <tbody id="recPDFBody"></tbody>
+        </table>
+      </div>
+
+      <!-- PIN Admin -->
+      <div class="divider"></div>
+      <div class="form-row" style="margin-bottom:4px;">
+        <label>PIN Admin</label>
+        <input type="password" id="recPDFPin" placeholder="••••" style="max-width:120px;">
+      </div>
+      <div id="recPDFPinError" style="color:#e24b4a;font-size:12px;display:none;margin-bottom:6px;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalRecetarioPDF')">Cancelar</button>
+      <button class="btn btn-primary" id="btnAplicarRecetario" style="display:none;" onclick="aplicarRecetarioPDF()">✓ Aplicar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Recetario en Tabla -->
+<div class="modal-overlay" id="modalEditarRecetario">
+  <div class="modal modal-lg" style="max-width:700px;">
+    <h2>✏️ Editar Recetario en Tabla</h2>
+    <p style="font-size:13px;color:#666;margin-bottom:14px;">
+      Modifica cantidades directamente. Los cambios se aplican todos juntos al guardar.
+    </p>
+    <div style="overflow-x:auto;max-height:440px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;">
+      <table class="edit-rec-table">
+        <thead><tr>
+          <th>Platillo</th>
+          <th>Ingrediente</th>
+          <th style="text-align:right;">Cantidad</th>
+          <th>Unidad</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="editRecBody"></tbody>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalEditarRecetario')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditarRecetario()">✓ Guardar cambios</button>
     </div>
   </div>
 </div>
@@ -1021,6 +1137,7 @@ const INVENTARIO_31_MAR = {
 // ESTADO
 // ══════════════════════════════════════
 let insumos=[], recetas=[], ordenes=[], movimientos=[], cortes=[], config={ultimoFolio:0};
+let _quickAddCtx = null; // {type:'recetario',ri} | {type:'nota',idx}
 let filtroActivo='todos';
 let importParsed=[];
 let verOrdenFolioActual=null;
@@ -1346,6 +1463,7 @@ function renderRecetario(){
             </select>
             <input type="number" id="ingCant_${ri}" placeholder="cant." min="0" step="any">
             <button class="btn btn-outline btn-sm" onclick="agregarIngrediente(${ri})">+ Agregar</button>
+            <button class="btn btn-outline btn-sm" style="color:#0D2A5E;border-color:#0D2A5E;white-space:nowrap;" onclick="abrirModalInsumoRapido('',''  ,{type:'recetario',ri:${ri}})" title="El insumo no existe aún — dar de alta primero">＋ Dar de alta</button>
           </div>
         </div>
       </div>
@@ -1573,6 +1691,29 @@ function abrirModalInsumo(id){
   abrirModal('modalInsumo');
 }
 
+// Mapear unidad del ticket al valor del <select id="insumoUnidad">
+function _mapUnidad(u=''){
+  const s = u.toLowerCase().trim();
+  if(['kg','kilo','kilos','kilogramo','kilogramos'].includes(s)) return 'kg';
+  if(['g','gr','gramo','gramos','grs'].includes(s)) return 'g';
+  if(['lt','lts','litro','litros','l'].includes(s)) return 'litro';
+  if(['ml','mililitro','mililitros'].includes(s)) return 'ml';
+  if(['pza','pzas','pieza','piezas','pz','unidad','unidades'].includes(s)) return 'pza';
+  if(['caja','cajas'].includes(s)) return 'caja';
+  if(['bolsa','bolsas'].includes(s)) return 'bolsa';
+  if(['rebanada','rebanadas'].includes(s)) return 'rebanada';
+  return 'g';
+}
+
+function abrirModalInsumoRapido(nombre, unidad, ctx){
+  _quickAddCtx = ctx || null;
+  abrirModalInsumo(); // limpia el modal
+  if(nombre) document.getElementById('insumoNombre').value = nombre;
+  const u = _mapUnidad(unidad);
+  document.getElementById('insumoUnidad').value = u;
+  document.getElementById('modalInsumoTitulo').textContent = '＋ Dar de alta insumo';
+}
+
 function agregarProvRow(prov, pi){
   const list = document.getElementById('provEditList');
   const idx = list.children.length;
@@ -1619,6 +1760,30 @@ function guardarInsumo(){
   cerrarModal('modalInsumo');
   renderStock();
   toast(editId ? 'Insumo actualizado ✓' : 'Insumo agregado ✓');
+
+  // Regresar al contexto de origen (recetario o nota)
+  if(_quickAddCtx && !editId){
+    const newIns = insumos[insumos.length-1];
+    const ctx = _quickAddCtx;
+    _quickAddCtx = null;
+    if(ctx.type==='recetario'){
+      renderRecetario();
+      setTimeout(()=>{
+        const body=document.getElementById('recetabody_'+ctx.ri);
+        if(body) body.classList.add('open');
+        const sel=document.getElementById('ingInsumo_'+ctx.ri);
+        if(sel) sel.value=newIns.id;
+      },50);
+    } else if(ctx.type==='nota'){
+      renderNotaConfirm();
+      setTimeout(()=>{
+        const sel=document.getElementById('notaInsumo_'+ctx.idx);
+        if(sel) sel.value=newIns.id;
+      },50);
+    }
+  } else {
+    _quickAddCtx = null;
+  }
 }
 
 // ══════════════════════════════════════
@@ -2295,6 +2460,9 @@ function renderNotaConfirm(){
         <input type="number" id="notaCant_${i}" value="${item.cantidad}" min="0" step="any">
       </td>
       <td style="font-size:12px;color:#888;">${item.unidad}</td>
+      <td>${!insumoMatch
+        ? `<button class="btn btn-outline btn-sm" style="white-space:nowrap;font-size:11px;color:#0D2A5E;border-color:#0D2A5E;" onclick="abrirModalInsumoRapido('${item.descripcion.replace(/'/g,"\\'")}','${(item.unidad||'').replace(/'/g,"\\'")}',{type:'nota',idx:${i}})">＋ Dar de alta</button>`
+        : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -2532,6 +2700,328 @@ async function confirmarVentasPDF(){
 }
 
 // ══════════════════════════════════════
+// RECETARIO PDF — Subir y aplicar
+// ══════════════════════════════════════
+let recPDFParsed = [];   // recetas leídas del PDF
+let recPDFInsNuevos = []; // insumos nuevos detectados
+
+function abrirRecetarioPDF(){
+  recPDFParsed = [];
+  recPDFInsNuevos = [];
+  document.getElementById('recPDFStep1').style.display = 'block';
+  document.getElementById('recPDFStep2').style.display = 'none';
+  document.getElementById('recPDFLoading').style.display = 'none';
+  document.getElementById('recPDFError').style.display = 'none';
+  document.getElementById('btnAplicarRecetario').style.display = 'none';
+  document.getElementById('recPDFFile').value = '';
+  document.getElementById('recPDFPin').value = '';
+  document.getElementById('recPDFPinError').style.display = 'none';
+  abrirModal('modalRecetarioPDF');
+}
+
+async function procesarRecetarioPDF(input){
+  const file = input.files[0];
+  if(!file) return;
+  document.getElementById('recPDFLoading').style.display = 'block';
+  document.getElementById('recPDFError').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const r = await fetch('/api/leer-recetario-pdf', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ pdf: base64 })
+      });
+      const d = await r.json();
+      document.getElementById('recPDFLoading').style.display = 'none';
+      if(!r.ok){
+        document.getElementById('recPDFError').style.display = 'block';
+        document.getElementById('recPDFError').textContent = d.error || 'Error al leer el PDF';
+        return;
+      }
+      recPDFParsed = d.recetas || [];
+      mostrarRevisionRecetario();
+    } catch(err){
+      document.getElementById('recPDFLoading').style.display = 'none';
+      document.getElementById('recPDFError').style.display = 'block';
+      document.getElementById('recPDFError').textContent = 'Error de conexión: ' + err.message;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function mostrarRevisionRecetario(){
+  if(!recPDFParsed.length){
+    document.getElementById('recPDFError').style.display = 'block';
+    document.getElementById('recPDFError').textContent = 'No se encontraron recetas en el PDF.';
+    return;
+  }
+
+  // Detectar insumos nuevos (insumoId === null)
+  const insNuevosMap = {}; // nombre → {nombre, unidad}
+  recPDFParsed.forEach(r => {
+    (r.ingredientes || []).forEach(ing => {
+      if(!ing.insumoId && ing.nombre){
+        const key = ing.nombre.toLowerCase().trim();
+        if(!insNuevosMap[key]) insNuevosMap[key] = {nombre: ing.nombre.trim(), unidad: ing.unidad || 'pza'};
+      }
+    });
+  });
+  recPDFInsNuevos = Object.values(insNuevosMap);
+
+  // Categorizar cada receta
+  const cuerpo = document.getElementById('recPDFBody');
+  let cNuevo=0, cActualizado=0, cIgual=0, cDuplicado=0;
+
+  cuerpo.innerHTML = recPDFParsed.map((r, ri) => {
+    // Buscar en recetas actuales (case-insensitive)
+    const matches = recetas.filter(x => x.platillo.toLowerCase().trim() === r.platillo.toLowerCase().trim());
+    let estado, badgeHtml;
+    if(matches.length > 1){
+      estado = 'duplicado'; cDuplicado++;
+      badgeHtml = `<span class="rbadge-duplicado">DUPLICADO (${matches.length})</span>`;
+    } else if(matches.length === 1){
+      // Comparar ingredientes
+      const ingActual = JSON.stringify((matches[0].ingredientes||[]).map(x=>x.insumoId+'_'+x.cantidad).sort());
+      const ingNuevo  = JSON.stringify((r.ingredientes||[]).map(x=>x.insumoId+'_'+x.cantidad).sort());
+      if(ingActual === ingNuevo){
+        estado = 'igual'; cIgual++;
+        badgeHtml = `<span class="rbadge-igual">SIN CAMBIOS</span>`;
+      } else {
+        estado = 'actualizado'; cActualizado++;
+        badgeHtml = `<span class="rbadge-actualizado">ACTUALIZADO</span>`;
+      }
+    } else {
+      estado = 'nuevo'; cNuevo++;
+      badgeHtml = `<span class="rbadge-nuevo">NUEVO</span>`;
+    }
+
+    const ingHtml = (r.ingredientes||[]).map(ing => {
+      const tieneIns = !!ing.insumoId;
+      return `<div class="${tieneIns?'':'rdiff-ing warn'}">${tieneIns ? '':'⚠️ '}${ing.nombre} — ${ing.cantidad} ${ing.unidad}${tieneIns ? '' : ' <span class="rbadge-ins">nuevo insumo</span>'}</div>`;
+    }).join('');
+
+    // Checkbox checked by default (excepto "igual" que no cambia nada)
+    const checked = estado !== 'igual';
+    return `<tr>
+      <td><input type="checkbox" id="recChk_${ri}" ${checked?'checked':''}></td>
+      <td style="font-weight:600;font-size:13px;">${r.platillo}</td>
+      <td style="white-space:nowrap;">${badgeHtml}</td>
+      <td><div class="rdiff-ing">${ingHtml || '<span style="color:#bbb;">Sin ingredientes</span>'}</div></td>
+    </tr>`;
+  }).join('');
+
+  // Resumen
+  const resumen = document.getElementById('recPDFResumen');
+  resumen.innerHTML = [
+    cNuevo      ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#3b6d11;">${cNuevo}</div><div style="font-size:11px;color:#888;">Nuevos</div></div>` : '',
+    cActualizado? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#b06800;">${cActualizado}</div><div style="font-size:11px;color:#888;">Actualizados</div></div>` : '',
+    cIgual      ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#888;">${cIgual}</div><div style="font-size:11px;color:#888;">Sin cambios</div></div>` : '',
+    cDuplicado  ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#e24b4a;">${cDuplicado}</div><div style="font-size:11px;color:#888;">Duplicados</div></div>` : '',
+    recPDFInsNuevos.length ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#0D2A5E;">${recPDFInsNuevos.length}</div><div style="font-size:11px;color:#888;">Insumos nuevos</div></div>` : '',
+  ].join('');
+
+  // Insumos nuevos
+  const insNvDiv = document.getElementById('recPDFInsumosNuevos');
+  if(recPDFInsNuevos.length){
+    insNvDiv.style.display = 'block';
+    document.getElementById('recPDFInsumosNuevosLista').innerHTML = recPDFInsNuevos
+      .map(i => `<div>• <strong>${i.nombre}</strong> — unidad: ${i.unidad} <span class="rbadge-ins">se creará</span></div>`)
+      .join('');
+  } else {
+    insNvDiv.style.display = 'none';
+  }
+
+  document.getElementById('recPDFStep2').style.display = 'block';
+  document.getElementById('btnAplicarRecetario').style.display = 'inline-block';
+}
+
+function recPDFToggleAll(checked){
+  document.querySelectorAll('#recPDFBody input[type=checkbox]').forEach(cb => cb.checked = checked);
+}
+
+async function aplicarRecetarioPDF(){
+  const pin = document.getElementById('recPDFPin').value;
+  const pinErr = document.getElementById('recPDFPinError');
+  pinErr.style.display = 'none';
+
+  if(!pin){ pinErr.textContent = 'Ingresa el PIN'; pinErr.style.display = 'block'; return; }
+
+  // Verificar PIN contra el servidor
+  try {
+    const check = await fetch('/api/corte', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fecha: '1900-01-01', pin })
+    });
+    const cd = await check.json();
+    // Si el error es solo de fecha, el PIN es correcto
+    if(check.status === 401){
+      pinErr.textContent = 'PIN incorrecto'; pinErr.style.display = 'block'; return;
+    }
+  } catch(_){}
+
+  // Recopilar recetas marcadas
+  const seleccionadas = recPDFParsed.filter((_, ri) => {
+    const cb = document.getElementById('recChk_' + ri);
+    return cb && cb.checked;
+  });
+
+  if(!seleccionadas.length){ toast('Selecciona al menos un platillo'); return; }
+
+  // 1. Dar de alta insumos nuevos detectados en las recetas seleccionadas
+  const insNuevosEnSeleccion = new Set();
+  seleccionadas.forEach(r => {
+    (r.ingredientes||[]).forEach(ing => {
+      if(!ing.insumoId) insNuevosEnSeleccion.add(ing.nombre.toLowerCase().trim());
+    });
+  });
+
+  const insNuevosACrear = recPDFInsNuevos.filter(i => insNuevosEnSeleccion.has(i.nombre.toLowerCase().trim()));
+  const insNuevoMap = {}; // nombre_lower → id
+
+  insNuevosACrear.forEach(n => {
+    const newId = genId('ins');
+    insumos.push({ id: newId, nombre: n.nombre, unidad: n.unidad, stock: 0, stockMin: 0, costo: 0, ultimaRevisionPrecio: HOY(), proveedores: [] });
+    insNuevoMap[n.nombre.toLowerCase().trim()] = newId;
+  });
+
+  // Construir mapa de insumos (por id y por nombre)
+  const insMapId = {};
+  insumos.forEach(i => { insMapId[i.id] = i; });
+
+  // 2. Aplicar recetas seleccionadas
+  let actualizados = 0, creados = 0;
+  seleccionadas.forEach(r => {
+    // Resolver insumoId para ingredientes nuevos
+    const ings = (r.ingredientes||[]).map(ing => {
+      let iid = ing.insumoId;
+      if(!iid) iid = insNuevoMap[ing.nombre.toLowerCase().trim()] || null;
+      const ins = iid ? insMapId[iid] : null;
+      return { insumoId: iid || '', nombre: ins?.nombre || ing.nombre, cantidad: ing.cantidad, unidad: ing.unidad };
+    }).filter(x => x.insumoId);
+
+    const idxExistente = recetas.findIndex(x => x.platillo.toLowerCase().trim() === r.platillo.toLowerCase().trim());
+    if(idxExistente >= 0){
+      recetas[idxExistente] = { ...recetas[idxExistente], platillo: r.platillo, ingredientes: ings };
+      actualizados++;
+    } else {
+      recetas.push({ platillo: r.platillo, ingredientes: ings });
+      creados++;
+    }
+  });
+
+  // 3. Registrar movimiento tipo RESET_RECETARIO
+  const hora = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  movimientos.push({
+    id: genId('mov'),
+    fecha: HOY(), hora,
+    tipo: 'RESET_RECETARIO',
+    insumoId: 'sistema',
+    nombre: 'Recetario',
+    cantidad: 0, unidad: '—',
+    responsable: 'PDF',
+    concepto: `Recetario actualizado desde PDF — ${creados} platillos nuevos, ${actualizados} actualizados${insNuevosACrear.length ? ', ' + insNuevosACrear.length + ' insumos nuevos' : ''}`,
+    referencia: '',
+    stockAntes: 0, stockDespues: 0,
+  });
+
+  await guardar();
+  cerrarModal('modalRecetarioPDF');
+  renderRecetario();
+  renderMovimientos();
+  toast(`✓ Recetario actualizado — ${creados} nuevos, ${actualizados} actualizados`);
+}
+
+// ══════════════════════════════════════
+// RECETARIO EDICIÓN EN TABLA (BULK)
+// ══════════════════════════════════════
+function abrirEditarRecetario(){
+  const tbody = document.getElementById('editRecBody');
+  const insMap = {};
+  insumos.forEach(i => { insMap[i.id] = i; });
+  const insOpts = insumos.map(i => `<option value="${i.id}">${i.nombre} (${i.unidad})</option>`).join('');
+
+  tbody.innerHTML = recetas.flatMap((r, ri) => {
+    const sepRow = `<tr><td colspan="5" class="edit-rec-sep">${r.platillo}</td></tr>`;
+    const ingRows = (r.ingredientes || []).map((ing, ii) => `
+      <tr>
+        <td style="font-size:12px;color:#888;padding-left:18px;">${r.platillo}</td>
+        <td>
+          <select data-ri="${ri}" data-ii="${ii}" data-field="insumoId" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;max-width:200px;">
+            <option value="">— sin insumo —</option>
+            ${insumos.map(i => `<option value="${i.id}" ${i.id===ing.insumoId?'selected':''}>${i.nombre}</option>`).join('')}
+          </select>
+        </td>
+        <td style="text-align:right;">
+          <input type="number" data-ri="${ri}" data-ii="${ii}" data-field="cantidad" value="${ing.cantidad}" min="0" step="any">
+        </td>
+        <td style="font-size:12px;color:#888;">${insMap[ing.insumoId]?.unidad || ing.unidad}</td>
+        <td>
+          <button onclick="editRecEliminarIng(${ri},${ii})" style="width:24px;height:24px;border-radius:5px;border:1px solid #fcc;background:none;cursor:pointer;color:#e24b4a;font-size:11px;">✕</button>
+        </td>
+      </tr>
+    `).join('');
+    const addRow = `<tr>
+      <td style="padding-left:18px;font-size:12px;color:#aaa;">+ insumo</td>
+      <td colspan="3">
+        <select id="editRecAddSel_${ri}" style="padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;outline:none;max-width:200px;">
+          <option value="">— agregar insumo —</option>
+          ${insOpts}
+        </select>
+        <input type="number" id="editRecAddCant_${ri}" placeholder="cant." min="0" step="any" style="width:68px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;margin-left:6px;outline:none;">
+      </td>
+      <td><button onclick="editRecAgregarIng(${ri})" class="btn btn-outline btn-sm" style="font-size:11px;padding:4px 10px;">+</button></td>
+    </tr>`;
+    return [sepRow, ...(r.ingredientes.length ? [ingRows] : []), addRow];
+  }).join('');
+
+  abrirModal('modalEditarRecetario');
+}
+
+function editRecEliminarIng(ri, ii){
+  if(!confirm('¿Eliminar ingrediente?')) return;
+  recetas[ri].ingredientes.splice(ii, 1);
+  abrirEditarRecetario(); // rerender
+}
+
+function editRecAgregarIng(ri){
+  const sel  = document.getElementById('editRecAddSel_' + ri);
+  const cant = parseFloat(document.getElementById('editRecAddCant_' + ri)?.value);
+  if(!sel.value){ toast('Selecciona un insumo'); return; }
+  if(!cant || cant <= 0){ toast('Ingresa una cantidad'); return; }
+  if(recetas[ri].ingredientes.some(x => x.insumoId === sel.value)){ toast('Ya existe en la receta'); return; }
+  const ins = insumos.find(i => i.id === sel.value);
+  if(!ins) return;
+  recetas[ri].ingredientes.push({ insumoId: ins.id, nombre: ins.nombre, cantidad: cant, unidad: ins.unidad });
+  abrirEditarRecetario();
+}
+
+function guardarEditarRecetario(){
+  // Leer todos los campos data-* del DOM
+  document.querySelectorAll('#editRecBody [data-field="insumoId"]').forEach(sel => {
+    const ri = parseInt(sel.dataset.ri);
+    const ii = parseInt(sel.dataset.ii);
+    if(!recetas[ri] || !recetas[ri].ingredientes[ii]) return;
+    recetas[ri].ingredientes[ii].insumoId = sel.value;
+    const ins = insumos.find(i => i.id === sel.value);
+    if(ins) recetas[ri].ingredientes[ii].nombre = ins.nombre;
+  });
+  document.querySelectorAll('#editRecBody [data-field="cantidad"]').forEach(inp => {
+    const ri = parseInt(inp.dataset.ri);
+    const ii = parseInt(inp.dataset.ii);
+    if(!recetas[ri] || !recetas[ri].ingredientes[ii]) return;
+    recetas[ri].ingredientes[ii].cantidad = parseFloat(inp.value) || 0;
+  });
+  guardar();
+  cerrarModal('modalEditarRecetario');
+  renderRecetario();
+  toast('Recetario actualizado ✓');
+}
+
+// ══════════════════════════════════════
 // DRAG & DROP — Notas y Ventas PDF
 // ══════════════════════════════════════
 function iniciarDragDrop(){
@@ -2557,6 +3047,27 @@ function iniciarDragDrop(){
       dt.items.add(file);
       fotoInput.files = dt.files;
       procesarFotoNota(fotoInput);
+    });
+  }
+
+  // Drop zone: Recetario PDF
+  const recDrop = document.getElementById('recPDFDrop');
+  if(recDrop){
+    recDrop.addEventListener('dragover', e=>{ e.preventDefault(); recDrop.classList.add('drag-over'); });
+    recDrop.addEventListener('dragleave', ()=> recDrop.classList.remove('drag-over'));
+    recDrop.addEventListener('drop', e=>{
+      e.preventDefault();
+      recDrop.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if(!file) return;
+      if(file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+        toast('Por favor sube un archivo PDF'); return;
+      }
+      const fi = document.getElementById('recPDFFile');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fi.files = dt.files;
+      procesarRecetarioPDF(fi);
     });
   }
 
