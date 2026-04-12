@@ -637,6 +637,92 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
   }
 });
 
+// ── Leer conteo físico de PDF ──
+app.post('/api/leer-conteo-fisico-pdf', async (req, res) => {
+  try {
+    const { pdf } = req.body;
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'ANTHROPIC_API_KEY no configurada en Vercel' });
+    if (!pdf)    return res.status(400).json({ error: 'Falta el PDF' });
+
+    const insumosActuales = await kv.get(K.insumos) || [];
+    const catalogo = insumosActuales.map(i => `${i.id}|${i.nombre}|${i.unidad}`).join('\n');
+
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: { type: 'base64', media_type: 'application/pdf', data: pdf }
+            },
+            {
+              type: 'text',
+              text: `Eres un asistente de inventario para el restaurante INSTINTO. Analiza este documento de CONTEO FÍSICO de inventario.
+
+Catálogo de insumos disponibles (formato: id|nombre|unidad):
+${catalogo}
+
+Extrae TODOS los insumos con sus cantidades exactas del conteo.
+Para cada insumo, busca el ID correspondiente en el catálogo (coincidencia por nombre, tolerante a mayúsculas/tildes).
+Si no hay match razonable, deja insumoId como null.
+
+Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
+{
+  "conteo": [
+    {
+      "nombre": "nombre del insumo tal como aparece",
+      "insumoId": "ins_XXX o null",
+      "cantidad": 0,
+      "unidad": "g/ml/pza/etc"
+    }
+  ]
+}`
+            }
+          ]
+        }]
+      })
+    });
+
+    const d = await r.json();
+    if (!r.ok) return res.status(500).json({ error: d.error?.message || 'Error al llamar Anthropic API' });
+
+    const texto = d.content?.[0]?.text || '';
+    const jsonMatch = texto.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return res.status(500).json({ error: 'No se pudo extraer el conteo. Verifica que el PDF sea legible.' });
+
+    const resultado = JSON.parse(jsonMatch[0]);
+
+    // Calcular diferencias contra inventario actual
+    const conteoConDiff = resultado.conteo.map(item => {
+      const insumo = insumosActuales.find(i => i.id === item.insumoId);
+      const stockActual = insumo ? (insumo.stock || 0) : 0;
+      const diferencia = item.cantidad - stockActual;
+
+      return {
+        ...item,
+        stockActual,
+        diferencia,
+        estado: diferencia === 0 ? 'SIN_CAMBIOS' : (diferencia > 0 ? 'SOBRANTE' : 'FALTANTE')
+      };
+    });
+
+    res.json({ conteo: conteoConDiff });
+  } catch (e) {
+    console.error('/api/leer-conteo-fisico-pdf', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
 module.exports = app;

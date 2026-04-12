@@ -137,6 +137,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .rbadge-ins{background:#e8f0fe;color:#0D2A5E;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:700;white-space:nowrap;}
 .rdiff-ing{font-size:12px;color:#555;line-height:1.7;}
 .rdiff-ing .warn{color:#b06800;}
+/* ── CONTEO FÍSICO ── */
+.conteo-table{width:100%;border-collapse:collapse;font-size:13px;}
+.conteo-table th{text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:2px solid #e8e8e8;font-weight:600;background:#f9f9f7;}
+.conteo-table td{padding:8px 10px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.conteo-table td.num{text-align:right;font-weight:500;font-family:monospace;}
+.conteo-faltante{background:#fff5f5;color:#e24b4a;}
+.conteo-sobrante{background:#f0f7f0;color:#3b6d11;}
+.conteo-igual{background:#f5f5f5;color:#666;}
+.cbadge-faltante{background:#ffe8e8;color:#c41e1e;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+.cbadge-sobrante{background:#e8f4e8;color:#2d5a2d;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
 /* ── EDITAR RECETARIO EN TABLA ── */
 .edit-rec-table{width:100%;border-collapse:collapse;font-size:13px;}
 .edit-rec-table th{background:#f9f9f7;text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:2px solid #e8e8e8;font-weight:600;position:sticky;top:0;}
@@ -288,6 +298,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <button class="btn btn-danger btn-sm" onclick="abrirMerma()">🗑 Merma</button>
       <button class="btn btn-outline btn-sm" onclick="abrirVentasPDF()">📄 Ventas PDF</button>
       <button class="btn btn-naranja btn-sm" onclick="abrirLeerNota()">📷 Leer nota</button>
+      <button class="btn btn-outline btn-sm" onclick="abrirConteoPDF()">📊 Conteo Físico</button>
       <button class="btn btn-outline btn-sm" onclick="abrirConteoInicial()">📋 Conteo inicial</button>
       <button class="btn btn-outline btn-sm" onclick="cargarSemillaInventario()" title="Cargar inventario físico 31 Mar 2026">🌱 Semilla 31-Mar</button>
       <button class="btn btn-outline btn-sm" onclick="abrirModalInsumo()">+ Insumo</button>
@@ -824,6 +835,66 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('modalEditarRecetario')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarEditarRecetario()">✓ Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Conteo Físico PDF -->
+<div class="modal-overlay" id="modalConteoPDF">
+  <div class="modal modal-lg">
+    <h2>📊 Conteo Físico de Inventario</h2>
+
+    <!-- Step 1: Subir PDF -->
+    <div id="conteoPDFStep1">
+      <p style="font-size:13px;color:#666;margin-bottom:14px;">
+        Sube el PDF del conteo físico. Claude extraerá los insumos y cantidades, comparará con el inventario actual y mostrará las diferencias.
+      </p>
+      <div class="nota-drop" id="conteoPDFDrop" onclick="document.getElementById('conteoPDFFile').click()">
+        <div style="font-size:36px;margin-bottom:8px;">📊</div>
+        <div style="font-size:14px;color:#888;font-weight:500;">Arrastra el PDF aquí o toca para seleccionar</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px;">PDF con el resultado del conteo físico</div>
+        <input type="file" id="conteoPDFFile" accept=".pdf,application/pdf" style="display:none" onchange="procesarConteoPDF(this)">
+      </div>
+      <div id="conteoPDFLoading" style="display:none;text-align:center;padding:28px;color:#888;font-size:14px;">
+        <div style="font-size:28px;margin-bottom:8px;">🔍</div>
+        <div>Leyendo conteo con IA...</div>
+        <div style="font-size:12px;color:#bbb;margin-top:4px;">Esto puede tardar unos segundos</div>
+      </div>
+      <div id="conteoPDFError" style="display:none;background:#fff0f0;border:1px solid #fcc;border-radius:8px;padding:12px;font-size:13px;color:#e24b4a;margin-top:10px;"></div>
+    </div>
+
+    <!-- Step 2: Revisar diferencias -->
+    <div id="conteoPDFStep2" style="display:none;">
+      <!-- Resumen de cambios -->
+      <div id="conteoPDFResumen" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px;background:#f9f9f7;border-radius:8px;"></div>
+
+      <!-- Tabla de diferencias -->
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Diferencias detectadas</div>
+      <div style="overflow-x:auto;max-height:360px;overflow-y:auto;border:1px solid #e8e8e8;border-radius:8px;">
+        <table class="conteo-table">
+          <thead><tr>
+            <th>Insumo</th>
+            <th style="text-align:right;">Stock actual</th>
+            <th style="text-align:right;">Conteo</th>
+            <th style="text-align:right;">Diferencia</th>
+            <th>Tipo</th>
+          </tr></thead>
+          <tbody id="conteoPDFBody"></tbody>
+        </table>
+      </div>
+
+      <!-- PIN Admin -->
+      <div class="divider"></div>
+      <div class="form-row" style="margin-bottom:4px;">
+        <label>PIN Admin</label>
+        <input type="password" id="conteoPDFPin" placeholder="••••" style="max-width:120px;">
+      </div>
+      <div id="conteoPDFPinError" style="color:#e24b4a;font-size:12px;display:none;margin-bottom:6px;"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalConteoPDF')">Cancelar</button>
+      <button class="btn btn-primary" id="btnAplicarConteo" style="display:none;" onclick="aplicarConteoPDF()">✓ Aplicar ajustes</button>
     </div>
   </div>
 </div>
@@ -3022,6 +3093,158 @@ function guardarEditarRecetario(){
 }
 
 // ══════════════════════════════════════
+// CONTEO FÍSICO PDF
+// ══════════════════════════════════════
+let conteoPDFParsed = [];
+
+function abrirConteoPDF(){
+  conteoPDFParsed = [];
+  document.getElementById('conteoPDFStep1').style.display = 'block';
+  document.getElementById('conteoPDFStep2').style.display = 'none';
+  document.getElementById('conteoPDFLoading').style.display = 'none';
+  document.getElementById('conteoPDFError').style.display = 'none';
+  document.getElementById('btnAplicarConteo').style.display = 'none';
+  document.getElementById('conteoPDFFile').value = '';
+  document.getElementById('conteoPDFPin').value = '';
+  document.getElementById('conteoPDFPinError').style.display = 'none';
+  abrirModal('modalConteoPDF');
+}
+
+async function procesarConteoPDF(input){
+  const file = input.files[0];
+  if(!file) return;
+  document.getElementById('conteoPDFLoading').style.display = 'block';
+  document.getElementById('conteoPDFError').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result.split(',')[1];
+    try {
+      const r = await fetch('/api/leer-conteo-fisico-pdf', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ pdf: base64 })
+      });
+      const d = await r.json();
+      document.getElementById('conteoPDFLoading').style.display = 'none';
+      if(!r.ok){
+        document.getElementById('conteoPDFError').style.display = 'block';
+        document.getElementById('conteoPDFError').textContent = d.error || 'Error al leer el PDF';
+        return;
+      }
+      conteoPDFParsed = d.conteo || [];
+      mostrarRevisionConteo();
+    } catch(err){
+      document.getElementById('conteoPDFLoading').style.display = 'none';
+      document.getElementById('conteoPDFError').style.display = 'block';
+      document.getElementById('conteoPDFError').textContent = 'Error de conexión: ' + err.message;
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function mostrarRevisionConteo(){
+  if(!conteoPDFParsed.length){
+    document.getElementById('conteoPDFError').style.display = 'block';
+    document.getElementById('conteoPDFError').textContent = 'No se encontraron insumos en el PDF.';
+    return;
+  }
+
+  const cuerpo = document.getElementById('conteoPDFBody');
+  let cFaltante=0, cSobrante=0, cIgual=0;
+
+  cuerpo.innerHTML = conteoPDFParsed.map((item, idx) => {
+    const clase = item.estado === 'FALTANTE' ? 'conteo-faltante' : (item.estado === 'SOBRANTE' ? 'conteo-sobrante' : 'conteo-igual');
+    const badge = item.estado === 'FALTANTE' ? `<span class="cbadge-faltante">FALTANTE</span>` :
+                   item.estado === 'SOBRANTE' ? `<span class="cbadge-sobrante">SOBRANTE</span>` :
+                   `<span style="color:#888;font-size:10px;">—</span>`;
+
+    if(item.estado === 'FALTANTE') cFaltante++;
+    if(item.estado === 'SOBRANTE') cSobrante++;
+    if(item.estado === 'SIN_CAMBIOS') cIgual++;
+
+    return `<tr class="${clase}">
+      <td>${item.nombre || 'Sin nombre'}</td>
+      <td class="num">${fmtNum(item.stockActual)} ${item.unidad || ''}</td>
+      <td class="num">${fmtNum(item.cantidad)} ${item.unidad || ''}</td>
+      <td class="num" style="font-weight:700;">${item.diferencia > 0 ? '+' : ''}${fmtNum(item.diferencia)}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+
+  // Resumen
+  const resumen = document.getElementById('conteoPDFResumen');
+  resumen.innerHTML = [
+    cFaltante  ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#c41e1e;">${cFaltante}</div><div style="font-size:11px;color:#888;">Faltante</div></div>` : '',
+    cSobrante  ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#2d5a2d;">${cSobrante}</div><div style="font-size:11px;color:#888;">Sobrante</div></div>` : '',
+    cIgual     ? `<div style="text-align:center;"><div style="font-size:20px;font-weight:700;color:#888;">${cIgual}</div><div style="font-size:11px;color:#888;">Sin cambios</div></div>` : '',
+  ].join('');
+
+  document.getElementById('conteoPDFStep2').style.display = 'block';
+  document.getElementById('btnAplicarConteo').style.display = 'inline-block';
+}
+
+async function aplicarConteoPDF(){
+  const pin = document.getElementById('conteoPDFPin').value;
+  const pinErr = document.getElementById('conteoPDFPinError');
+  pinErr.style.display = 'none';
+
+  if(!pin){ pinErr.textContent = 'Ingresa el PIN'; pinErr.style.display = 'block'; return; }
+
+  // Verificar PIN contra el servidor
+  try {
+    const check = await fetch('/api/corte', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ fecha: '1900-01-01', pin })
+    });
+    if(!check.ok){ pinErr.textContent = 'PIN incorrecto'; pinErr.style.display = 'block'; return; }
+  } catch(e){
+    pinErr.textContent = 'Error al verificar PIN: ' + e.message; pinErr.style.display = 'block'; return;
+  }
+
+  // Aplicar ajustes
+  try {
+    let conteoMov = 0;
+    conteoPDFParsed.forEach(item => {
+      if(item.diferencia === 0) return; // sin cambios
+
+      const ins = insumos.find(i => i.nombre === item.nombre || i.id === item.insumoId);
+      if(!ins) return; // insumo no encontrado
+
+      const movTipo = item.diferencia > 0 ? 'ENTRADA' : 'MERMA';
+      const cantidad = Math.abs(item.diferencia);
+
+      movimientos.push({
+        id: 'mov_' + Date.now() + '_' + Math.random().toString(36).substr(2,9),
+        fecha: HOY(),
+        tipo: movTipo,
+        insumoId: ins.id,
+        insumoNombre: ins.nombre,
+        cantidad,
+        unidad: ins.unidad,
+        razon: 'Ajuste por conteo físico',
+        costo: ins.costo || 0,
+        notas: `Conteo: ${item.cantidad} ${item.unidad} vs Stock: ${item.stockActual} ${item.unidad}`
+      });
+
+      // Actualizar stock
+      ins.stock = item.cantidad;
+      conteoMov++;
+    });
+
+    await guardar();
+    cerrarModal('modalConteoPDF');
+    await cargarDatos();
+    renderStock();
+    renderMovimientos();
+    toast(`✓ Conteo aplicado — ${conteoMov} insumo${conteoMov>1?'s':''} ajustados`);
+  } catch(err){
+    pinErr.textContent = 'Error al aplicar conteo: ' + err.message; pinErr.style.display = 'block';
+  }
+}
+
+// ══════════════════════════════════════
 // DRAG & DROP — Notas y Ventas PDF
 // ══════════════════════════════════════
 function iniciarDragDrop(){
@@ -3068,6 +3291,27 @@ function iniciarDragDrop(){
       dt.items.add(file);
       fi.files = dt.files;
       procesarRecetarioPDF(fi);
+    });
+  }
+
+  // Drop zone: Conteo Físico PDF
+  const conteoDrop = document.getElementById('conteoPDFDrop');
+  if(conteoDrop){
+    conteoDrop.addEventListener('dragover', e=>{ e.preventDefault(); conteoDrop.classList.add('drag-over'); });
+    conteoDrop.addEventListener('dragleave', ()=> conteoDrop.classList.remove('drag-over'));
+    conteoDrop.addEventListener('drop', e=>{
+      e.preventDefault();
+      conteoDrop.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if(!file) return;
+      if(file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+        toast('Por favor sube un archivo PDF'); return;
+      }
+      const fi = document.getElementById('conteoPDFFile');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fi.files = dt.files;
+      procesarConteoPDF(fi);
     });
   }
 
