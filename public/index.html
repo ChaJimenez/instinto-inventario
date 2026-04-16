@@ -437,7 +437,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <span class="sec-title">Historial de Movimientos</span>
     <button class="btn btn-outline btn-sm" onclick="abrirModalMovimiento()">+ Manual</button>
   </div>
-  <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+    <input type="text" id="movFiltroInsumo" placeholder="🔍 Buscar insumo..." oninput="renderMovimientos()"
+      style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
     <select id="movFiltroTipo" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
       <option value="">Todos los tipos</option>
       <option value="VENTA">Venta</option>
@@ -445,11 +447,19 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <option value="MERMA">Merma</option>
       <option value="AJUSTE">Ajuste</option>
       <option value="CORTE">Corte</option>
-      <option value="RESET_RECETARIO">Reset Recetario</option>
     </select>
-    <input type="date" id="movFiltroFecha" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
-    <button class="btn btn-outline btn-sm" onclick="document.getElementById('movFiltroTipo').value='';document.getElementById('movFiltroFecha').value='';renderMovimientos();">Limpiar</button>
+    <select id="movFiltroRango" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+      <option value="">Todas las fechas</option>
+      <option value="hoy">Hoy</option>
+      <option value="semana">Esta semana</option>
+      <option value="mes">Este mes</option>
+      <option value="fecha">Fecha exacta…</option>
+    </select>
+    <input type="date" id="movFiltroFecha" onchange="renderMovimientos()"
+      style="display:none;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+    <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosMov()">Limpiar</button>
   </div>
+  <div id="movResumen" style="display:none;background:#f0f4ff;border:1px solid #b0c4f5;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#0D2A5E;"></div>
   <div style="overflow-x:auto;">
     <table class="mov-table">
       <thead><tr>
@@ -1970,15 +1980,59 @@ function editarOrden(folio){
 // ══════════════════════════════════════
 // RENDER: MOVIMIENTOS
 // ══════════════════════════════════════
-function renderMovimientos(){
-  const tipo  = document.getElementById('movFiltroTipo').value;
-  const fecha = document.getElementById('movFiltroFecha').value;
-  let lista = [...movimientos].reverse();
-  if(tipo)  lista = lista.filter(m=>m.tipo===tipo);
-  if(fecha) lista = lista.filter(m=>m.fecha===fecha);
+function limpiarFiltrosMov(){
+  document.getElementById('movFiltroInsumo').value='';
+  document.getElementById('movFiltroTipo').value='';
+  document.getElementById('movFiltroRango').value='';
+  document.getElementById('movFiltroFecha').value='';
+  document.getElementById('movFiltroFecha').style.display='none';
+  renderMovimientos();
+}
 
-  const tbody = document.getElementById('movTbody');
-  const empty = document.getElementById('movEmpty');
+function renderMovimientos(){
+  const busq  = (document.getElementById('movFiltroInsumo').value||'').toLowerCase().trim();
+  const tipo  = document.getElementById('movFiltroTipo').value;
+  const rango = document.getElementById('movFiltroRango').value;
+  const fecha = document.getElementById('movFiltroFecha').value;
+
+  // Mostrar/ocultar input de fecha exacta
+  document.getElementById('movFiltroFecha').style.display = rango==='fecha' ? '' : 'none';
+
+  // Calcular rango de fechas
+  const hoy = HOY();
+  let desdeF='', hastaF='';
+  if(rango==='hoy'){ desdeF=hoy; hastaF=hoy; }
+  else if(rango==='semana'){
+    const d=new Date(); d.setDate(d.getDate()-d.getDay()+1); // lunes
+    desdeF=d.toISOString().slice(0,10); hastaF=hoy;
+  }
+  else if(rango==='mes'){ desdeF=hoy.slice(0,7)+'-01'; hastaF=hoy; }
+  else if(rango==='fecha' && fecha){ desdeF=fecha; hastaF=fecha; }
+
+  let lista = [...movimientos].reverse();
+  if(busq)   lista = lista.filter(m=>(m.nombre||'').toLowerCase().includes(busq));
+  if(tipo)   lista = lista.filter(m=>m.tipo===tipo);
+  if(desdeF) lista = lista.filter(m=>m.fecha>=desdeF && m.fecha<=hastaF);
+
+  const tbody   = document.getElementById('movTbody');
+  const empty   = document.getElementById('movEmpty');
+  const resumen = document.getElementById('movResumen');
+
+  // Resumen cuando hay búsqueda activa
+  if(busq && lista.length){
+    const entradas = lista.filter(m=>m.cantidad>0);
+    const salidas  = lista.filter(m=>m.cantidad<0);
+    const totalEnt = entradas.reduce((s,m)=>s+m.cantidad,0);
+    const totalSal = salidas.reduce((s,m)=>s+Math.abs(m.cantidad),0);
+    const unidad   = lista[0]?.unidad || '';
+    const partes   = [];
+    if(entradas.length) partes.push(`<strong>Entradas:</strong> +${fmtNum(totalEnt)} ${unidad} (${entradas.length} mov.)`);
+    if(salidas.length)  partes.push(`<strong>Salidas:</strong> −${fmtNum(totalSal)} ${unidad} (${salidas.length} mov.)`);
+    resumen.innerHTML = partes.join(' &nbsp;·&nbsp; ');
+    resumen.style.display = '';
+  } else {
+    resumen.style.display = 'none';
+  }
 
   if(!lista.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
