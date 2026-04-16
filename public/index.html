@@ -3092,11 +3092,14 @@ function renderVentasPDFConfirm(){
 
 // Da de alta en el recetario todos los platillos sin match de un jalón
 function altaTodasSinMatch(){
-  const sinMatch = ventasPDFParsed.filter(item =>
-    !recetas.find(r => r.platillo.toLowerCase() === (item.recetaMapeada||'').toLowerCase()) &&
-    !recetas.find(r => r.platillo === item.descripcion)
-  );
-  if(!sinMatch.length){ toast('Todos los platillos ya tienen receta'); return; }
+  // Solo las filas donde el dropdown todavía dice "— ignorar —"
+  const sinMatch = ventasPDFParsed.filter((item, i) => {
+    const selVal = document.getElementById('ventasReceta_'+i)?.value;
+    if(selVal) return false; // ya tiene receta seleccionada manualmente
+    return !recetas.find(r => r.platillo.toLowerCase() === (item.recetaMapeada||'').toLowerCase())
+        && !recetas.find(r => r.platillo === item.descripcion);
+  });
+  if(!sinMatch.length){ toast('Todos los platillos ya tienen receta o están ignorados'); return; }
 
   let nuevos = 0;
   sinMatch.forEach(item => {
