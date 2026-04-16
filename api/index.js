@@ -723,6 +723,148 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
   }
 });
 
+// ── Auto-corte: procesa todos los días del POS sin procesar (sin PIN, para sync automático) ──
+app.post('/api/auto-corte', async (req, res) => {
+  try {
+    const [posVentas, insumosRaw, recetasRaw, movimientosRaw, cortesRaw, configRaw] = await Promise.all([
+      kv.get(K.posVentas),
+      kv.get(K.insumos),
+      kv.get(K.recetas),
+      kv.get(K.movimientos),
+      kv.get(K.cortes),
+      kv.get(K.config),
+    ]);
+
+    const ventas      = posVentas      || [];
+    const recetas     = recetasRaw     || [];
+    const movimientos = movimientosRaw || [];
+    const cortes      = cortesRaw      || [];
+    const config      = configRaw      || {};
+
+    const fechaInicio    = config.fechaInicioVentas || '2000-01-01';
+    const fechasProcesadas = new Set(cortes.map(c => c.fecha));
+
+    const normFecha = (v) => {
+      if (v.fecha) {
+        const f = v.fecha;
+        if (f.includes('/')) {
+          const [d,m,y] = f.split('/');
+          return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        }
+        return f.slice(0,10);
+      }
+      return new Date(v.id).toISOString().slice(0,10);
+    };
+
+    // Agrupar ventas pendientes por fecha
+    const ventasPorFecha = {};
+    ventas.forEach(v => {
+      if (v.excluida) return;
+      const fv = normFecha(v);
+      if (fv < fechaInicio || fechasProcesadas.has(fv)) return;
+      if (!ventasPorFecha[fv]) ventasPorFecha[fv] = [];
+      ventasPorFecha[fv].push(v);
+    });
+
+    const fechasPendientes = Object.keys(ventasPorFecha).sort();
+    if (!fechasPendientes.length) return res.json({ ok: true, cortesRealizados: 0, fechas: [] });
+
+    const recetaMap = {};
+    recetas.forEach(r => { recetaMap[r.platillo] = r.ingredientes || []; });
+
+    // Mapa mutable de insumos
+    const insMap = {};
+    (insumosRaw || []).forEach(ins => { insMap[ins.id] = { ...ins }; });
+
+    for (const fecha of fechasPendientes) {
+      const ventasHoy   = ventasPorFecha[fecha];
+      const descuentos  = {};
+      const sinReceta   = new Set();
+      let   itemsCount  = 0;
+
+      ventasHoy.forEach(v => {
+        (v.items || []).filter(it => !it.cancelado).forEach(item => {
+          const receta = recetaMap[item.n];
+          if (!receta || !receta.length) { sinReceta.add(item.n); return; }
+          const qty = item.q || 1;
+          itemsCount += qty;
+          receta.forEach(ing => {
+            descuentos[ing.insumoId] = (descuentos[ing.insumoId] || 0) + ing.cantidad * qty;
+          });
+        });
+      });
+
+      const hora = new Date().toLocaleTimeString('es-MX', { hour:'2-digit', minute:'2-digit' });
+      Object.entries(descuentos).forEach(([insId, cant]) => {
+        const ins = insMap[insId];
+        if (!ins) return;
+        const stockAntes = ins.stock;
+        ins.stock = Math.max(0, ins.stock - cant);
+        movimientos.push({
+          id: `${Date.now()}_${insId}_${fecha}`,
+          fecha, hora,
+          tipo: 'VENTA',
+          insumoId: insId,
+          nombre: ins.nombre,
+          cantidad: -(cant),
+          unidad: ins.unidad,
+          responsable: 'Auto-Corte POS',
+          concepto: `Auto-corte ${fecha} — ${ventasHoy.length} ventas`,
+          referencia: `CORTE-AUTO-${fecha}`,
+          stockAntes,
+          stockDespues: ins.stock,
+        });
+      });
+
+      cortes.push({
+        fecha,
+        procesadoEn: new Date().toISOString(),
+        ventasProcesadas: ventasHoy.length,
+        itemsContados: itemsCount,
+        insumosAfectados: Object.keys(descuentos).length,
+        sinReceta: [...sinReceta],
+        auto: true,
+      });
+    }
+
+    await Promise.all([
+      kv.set(K.insumos,     Object.values(insMap)),
+      kv.set(K.movimientos, movimientos),
+      kv.set(K.cortes,      cortes),
+      kv.set(K.ts,          Date.now()),
+    ]);
+
+    res.json({ ok: true, cortesRealizados: fechasPendientes.length, fechas: fechasPendientes });
+  } catch (e) {
+    console.error('/api/auto-corte', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Toteat: registro de días con PDF subido ──
+const TOTEAT_KEY = 'inv:toteatDias';
+
+app.get('/api/toteat-dias', async (req, res) => {
+  try {
+    const dias = await kv.get(TOTEAT_KEY) || [];
+    res.json({ dias });
+  } catch (e) { res.json({ dias: [] }); }
+});
+
+app.post('/api/toteat-dias', async (req, res) => {
+  try {
+    const { fecha } = req.body || {};
+    if (!fecha) return res.status(400).json({ error: 'Falta fecha' });
+    const dias = await kv.get(TOTEAT_KEY) || [];
+    if (!dias.includes(fecha)) {
+      dias.push(fecha);
+      dias.sort();
+      await kv.set(TOTEAT_KEY, dias);
+    }
+    res.json({ ok: true, dias });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
 module.exports = app;

@@ -272,10 +272,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     </div>
   </div>
 
-  <!-- Banner ventas pendientes del POS -->
+  <!-- Banner ventas pendientes del POS (auto-corte info) -->
   <div id="ventasBanner" class="ventas-banner hidden">
     <div class="ventas-banner-txt" id="ventasBannerTxt"></div>
     <button class="btn btn-primary btn-sm" onclick="abrirCorte()">Ejecutar corte →</button>
+  </div>
+
+  <!-- Banner Toteat: días sin PDF -->
+  <div id="toteatBanner" class="ventas-banner hidden" style="background:#fff0f0;border-color:#e24b4a;">
+    <div class="ventas-banner-txt" id="toteatBannerTxt" style="color:#c41e1e;"></div>
+    <button class="btn btn-sm" style="background:#e24b4a;color:#fff;border:none;" onclick="abrirVentasPDF()">Subir PDF →</button>
   </div>
 
   <!-- Stats mini -->
@@ -301,6 +307,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <button class="btn btn-outline btn-sm" onclick="abrirConteoPDF()">📊 Conteo Físico</button>
       <button class="btn btn-outline btn-sm" onclick="abrirConteoInicial()">📋 Conteo inicial</button>
       <button class="btn btn-outline btn-sm" onclick="cargarSemillaInventario()" title="Cargar inventario físico 31 Mar 2026">🌱 Semilla 31-Mar</button>
+      <button class="btn btn-outline btn-sm" onclick="cargarSemillaInventario13Abr()" title="Cargar inventario físico 13 Abr 2026" style="color:#2d7a2d;border-color:#2d7a2d;">🌱 Semilla 13-Abr</button>
       <button class="btn btn-outline btn-sm" onclick="abrirModalInsumo()">+ Insumo</button>
     </div>
   </div>
@@ -988,6 +995,8 @@ const DEFAULT_INSUMOS = [
   {id:'ins_074',nombre:'Jarabe natural',         unidad:'ml',     stock:0, stockMin:1000,  costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
   {id:'ins_078',nombre:'Pepinillos',             unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
   {id:'ins_079',nombre:'Miel',                   unidad:'bote',   stock:0, stockMin:1,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
+  // ── VERDES ESPECIALES ──
+  {id:'ins_080',nombre:'Arúgula',                unidad:'kg',     stock:0, stockMin:0.5,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
   // ── ABARROTES ──
   {id:'ins_054',nombre:'Puré de tomate',         unidad:'bolsa',  stock:0, stockMin:2,     costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
   {id:'ins_075',nombre:'Azúcar',                 unidad:'g',      stock:0, stockMin:500,   costo:0, ultimaRevisionPrecio:HOY(), proveedores:[]},
@@ -1202,6 +1211,96 @@ const INVENTARIO_31_MAR = {
   'ins_077': 16,     // Codito: 16 bolsa
   'ins_078': 1.7,    // Pepinillos: 1.7 bote
   'ins_079': 1,      // Miel: 1 bote
+};
+
+// Inventario físico del 13 de abril 2026 — { insumoId: stock }
+// Unidades: g para carnes/verduras, ml para líquidos, pza/pqt/bote según insumo
+const INVENTARIO_13_ABR = {
+  // ── CARNES ──
+  'ins_001': 220,    // Carne molida: 0.22 kg
+  'ins_005': 0,      // Pollo: no listado
+  'ins_011': 4750,   // Tocino: 4.75 kg
+  'ins_014': 0,      // Papada: 0
+  // ── PAN ──
+  'ins_002': 100,    // Bollos brioche: 100 pza
+  'ins_047': 18,     // Pan de caja blanco: 18 pza
+  // ── LÁCTEOS ──
+  'ins_003': 2.0,    // Queso americano: 144 reb ÷ 72 = 2.0 pqt
+  'ins_004': 3.0,    // Queso suizo: 216 reb ÷ 72 = 3.0 pqt
+  'ins_041': 7.26,   // Queso cheddar: 7.26 kg
+  'ins_042': 9.0,    // Queso mozzarella: 9.0 kg
+  'ins_043': 0.4,    // Queso parmesano: 0.400 bote
+  'ins_044': 3000,   // Leche: 3.00 lt → 3000 ml
+  'ins_045': 0.46,   // Mantequilla: 0.460 caja
+  'ins_046': 0,      // Crema para batir: 0
+  // ── PAPA Y CAMOTE ──
+  'ins_006': 70000,  // Papa: 70.00 kg
+  'ins_013': 11.3,   // Bastones de camote: 11.30 kg (sistema usa 'caja')
+  // ── VERDURAS ──
+  'ins_015': 300,    // Jitomate saladet: 0.30 kg (jitomate bola = 0)
+  'ins_016': 0,      // Cebolla: 0 pz
+  'ins_017': 2,      // Col morada: 2 pz
+  'ins_018': 0,      // Lechuga italiana: 0 pz
+  'ins_019': 0,      // Cebollín: 0 kg
+  'ins_020': 1,      // Perejil: 1 manojo
+  'ins_021': 0.4,    // Cilantro: 0.40 kg (sistema usa 'manojo')
+  'ins_022': 1000,   // Ajo: 1.00 kg
+  'ins_023': 500,    // Chile de árbol: 0.50 kg
+  'ins_024': 500,    // Chile morita: 0.50 kg
+  'ins_025': 500,    // Chile guajillo: 0.50 kg
+  // ── FRUTA ──
+  'ins_026': 2000,   // Pulpa maracuyá: 2.00 kg
+  'ins_027': 0,      // Pulpa mango: 0
+  'ins_028': 0,      // Pulpa fresa: 0
+  'ins_029': 2000,   // Pulpa tamarindo: 2.00 kg
+  'ins_030': 0,      // Pulpa guanábana: 0
+  'ins_031': 0,      // Pulpa frutos rojos: 0 pz
+  'ins_032': 1,      // Piña: 1 pz
+  'ins_033': 0,      // Sandía: 0
+  'ins_034': 2000,   // Pera: 2.00 kg
+  'ins_035': 0,      // Frambuesa: 0 domo
+  'ins_036': 0,      // Zarzamora: 0 domo
+  'ins_037': 3000,   // Toronja: 3.00 kg
+  'ins_038': 0,      // Naranja: 0
+  'ins_039': 0,      // Limón: 0 pz
+  'ins_040': 2,      // Melón: 2 (2.00 kg tratado como 2 pzas)
+  // ── SALSAS / CONDIMENTOS / ABARROTES ──
+  'ins_007': 0,      // Mayonesa: pendiente conteo
+  'ins_008': 0,      // Sriracha: pendiente conteo
+  'ins_048': 0,      // Ranch: pendiente conteo
+  'ins_049': 0,      // Mostaza: pendiente conteo
+  'ins_050': 0,      // Catsup: pendiente conteo
+  'ins_051': 0,      // Soya: pendiente conteo
+  'ins_052': 0,      // Buffalo: pendiente conteo
+  'ins_053': 0,      // BBQ: pendiente conteo
+  'ins_054': 0,      // Puré de tomate: pendiente conteo
+  'ins_055': 0,      // Harina hotcakes: pendiente conteo
+  'ins_056': 0,      // Harina de trigo: pendiente conteo
+  'ins_057': 0,      // Fécula de maíz: pendiente conteo
+  'ins_058': 0,      // Fécula de tapioca: pendiente conteo
+  'ins_059': 0,      // Polvo para hornear: pendiente conteo
+  'ins_060': 0,      // Paprika: pendiente conteo
+  'ins_061': 0,      // Ajo en polvo: pendiente conteo
+  'ins_062': 0,      // Cebolla en polvo: pendiente conteo
+  'ins_063': 0,      // Consomé de pollo: pendiente conteo
+  'ins_064': 0,      // Comino: pendiente conteo
+  'ins_065': 0,      // Bicarbonato: pendiente conteo
+  'ins_066': 0,      // Panko: pendiente conteo
+  'ins_067': 0,      // GMS: pendiente conteo
+  'ins_068': 0,      // Pan molido: pendiente conteo
+  'ins_069': 0,      // Clamato: pendiente conteo
+  'ins_070': 0,      // Worcestershire: pendiente conteo
+  'ins_071': 0,      // Maggi: pendiente conteo
+  'ins_072': 0,      // Tabasco: pendiente conteo
+  'ins_073': 0,      // Tajín: pendiente conteo
+  'ins_074': 0,      // Jarabe natural: pendiente conteo
+  'ins_075': 0,      // Azúcar: pendiente conteo
+  'ins_076': 0,      // Oreo: pendiente conteo
+  'ins_077': 0,      // Codito: pendiente conteo
+  'ins_078': 0,      // Pepinillos: pendiente conteo
+  'ins_079': 0,      // Miel: pendiente conteo
+  'ins_012': 0,      // Aceite vegetal: pendiente conteo
+  'ins_080': 0,      // Arúgula: 0.00 kg
 };
 
 // ══════════════════════════════════════
@@ -1658,12 +1757,42 @@ function verOrden(folio){
 function marcarRecibida(){
   const o = ordenes.find(x=>x.folio===verOrdenFolioActual);
   if(!o) return;
-  if(!confirm(`¿Marcar ${o.folio} como RECIBIDA?\nEsto no actualiza el stock automáticamente. Usa "+ Manual" en Movimientos para registrar la entrada.`)) return;
+  const resumen = o.items.map(it=>`• ${it.nombre}: +${it.cantidad} ${it.unidad}`).join('\n');
+  if(!confirm(`¿Marcar ${o.folio} como RECIBIDA?\nEsto actualizará el stock automáticamente:\n\n${resumen}`)) return;
+
+  const hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const insMap = {};
+  insumos.forEach(i=>{ insMap[i.id]=i; });
+
+  o.items.forEach(item=>{
+    const ins = insMap[item.insumoId];
+    if(!ins) return;
+    const stockAntes = ins.stock;
+    ins.stock = ins.stock + item.cantidad;
+    movimientos.push({
+      id: genId('mov'),
+      fecha: o.fecha,
+      hora,
+      tipo: 'ENTRADA',
+      insumoId: ins.id,
+      nombre: ins.nombre,
+      cantidad: item.cantidad,
+      unidad: ins.unidad,
+      responsable: 'Compra',
+      concepto: `${o.folio} — ${o.proveedor}`,
+      referencia: o.folio,
+      stockAntes,
+      stockDespues: ins.stock,
+    });
+  });
+
   o.estado='recibida';
   guardar();
   cerrarModal('modalOrdenVer');
+  renderStock();
+  renderMovimientos();
   renderOrdenes();
-  toast(o.folio+' marcada como recibida ✓');
+  toast(`✓ ${o.folio} recibida — stock actualizado`);
 }
 
 function eliminarOrden(folio){
@@ -2299,6 +2428,48 @@ async function cargarSemillaInventario(){
   toast('✓ Inventario 31 Mar cargado — ventas se descuentan desde esa fecha');
 }
 
+async function cargarSemillaInventario13Abr(){
+  if(!confirm('¿Cargar inventario físico del 13 de abril?\n\nEsto:\n• Establece el stock inicial de todos los insumos al 13 de abril\n• Agrega insumos faltantes\n• Solo descuenta ventas desde el 13 de abril en adelante\n\nNota: frutas, verduras y abarrotes pendientes de conteo quedarán en 0 — usa "Conteo físico" para completarlos.')) return;
+
+  const mapa = {};
+  insumos.forEach(i => { mapa[i.id] = i; });
+  DEFAULT_INSUMOS.forEach(d => {
+    if(!mapa[d.id]) mapa[d.id] = {...d, ultimaRevisionPrecio:HOY()};
+  });
+  insumos = Object.values(mapa);
+
+  insumos.forEach(ins => {
+    if(INVENTARIO_13_ABR[ins.id] !== undefined){
+      const stockAntes = ins.stock;
+      ins.stock = INVENTARIO_13_ABR[ins.id];
+      if(ins.stock !== stockAntes){
+        movimientos.push({
+          id: genId('mov'),
+          fecha: '2026-04-13',
+          hora: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
+          tipo: 'AJUSTE',
+          insumoId: ins.id,
+          nombre: ins.nombre,
+          cantidad: ins.stock - stockAntes,
+          unidad: ins.unidad,
+          responsable: 'Conteo físico',
+          concepto: 'Inventario inicial 13 Abr 2026',
+          referencia: 'SEED-13ABR',
+          stockAntes,
+          stockDespues: ins.stock,
+        });
+      }
+    }
+  });
+
+  config.fechaInicioVentas = '2026-04-13';
+
+  await guardar();
+  renderStock();
+  cargarStockLive();
+  toast('✓ Inventario 13 Abr cargado — ventas se descuentan desde esa fecha');
+}
+
 // ══════════════════════════════════════
 // MODAL: CONTEO INICIAL
 // ══════════════════════════════════════
@@ -2764,6 +2935,11 @@ async function confirmarVentasPDF(){
 
   if(!totalVentas){ toast('No hay ventas válidas para procesar'); return; }
   await guardar();
+  // Registrar este día como procesado en Toteat
+  fetch('/api/toteat-dias', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ fecha }),
+  }).then(()=>actualizarBannerToteat()).catch(()=>{});
   cerrarModal('modalVentasPDF');
   renderStock();
   renderMovimientos();
@@ -3354,14 +3530,58 @@ setInterval(actualizarFecha,60000);
 
 iniciarDragDrop();
 
+// ── Toteat banner ──
+async function actualizarBannerToteat(){
+  try {
+    const r = await fetch('/api/toteat-dias');
+    if(!r.ok) return;
+    const { dias } = await r.json();
+    const banner = document.getElementById('toteatBanner');
+    const txt    = document.getElementById('toteatBannerTxt');
+    if(!banner) return;
+
+    const faltantes = [];
+    for(let i=1; i<=3; i++){
+      const d = new Date(Date.now()-i*86400000).toISOString().slice(0,10);
+      if(!dias.includes(d)) faltantes.push(d);
+    }
+    if(!faltantes.length){ banner.classList.add('hidden'); return; }
+    banner.classList.remove('hidden');
+    const fmt = f => f.split('-').reverse().join('/');
+    txt.textContent = `⚠️ Sin PDF de Toteat: ${faltantes.map(fmt).join(', ')}`;
+  } catch(_){}
+}
+
+// ── Auto-corte: procesa días del POS pendientes al cargar ──
+async function autoCorte(){
+  try {
+    const r = await fetch('/api/auto-corte', { method:'POST',
+      headers:{'Content-Type':'application/json'}, body:'{}' });
+    if(!r.ok) return;
+    const d = await r.json();
+    if(d.cortesRealizados > 0){
+      await cargarDatos();
+      renderStock();
+      renderMovimientos();
+      const fechasStr = d.fechas.join(', ');
+      toast(`Auto-corte POS: ${d.cortesRealizados} día${d.cortesRealizados>1?'s':''} procesado${d.cortesRealizados>1?'s':''} (${fechasStr})`);
+    }
+    // Actualizar banner ventas pendientes
+    cargarStockLive();
+  } catch(_){}
+}
+
 (async()=>{
   await cargarDatos();
   renderStock();
-  cargarStockLive(); // cargar proyección desde POS (no bloquea render inicial)
+  autoCorte();           // auto-procesa ventas del POS pendientes
+  cargarStockLive();     // proyección en tiempo real
+  actualizarBannerToteat(); // alerta si faltan PDFs de Toteat
 })();
 
 // Actualizar stock live cada 2 minutos
 setInterval(cargarStockLive, 120000);
+setInterval(actualizarBannerToteat, 300000); // revisar Toteat cada 5 min
 </script>
 </body>
 </html>
