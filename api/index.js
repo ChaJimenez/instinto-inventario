@@ -459,7 +459,8 @@ app.post('/api/leer-nota', async (req, res) => {
 
 Nuestro catálogo de insumos es: ${catalogo}
 
-Extrae todos los productos y cantidades que aparecen en la nota. Para cada producto, mapea al insumo más parecido del catálogo si existe.
+Extrae todos los productos, cantidades y precios que aparecen en la nota. Para cada producto, mapea al insumo más parecido del catálogo si existe.
+Si aparece precio unitario o precio total (y puedes deducir el unitario), extráelo. Si no aparece precio, pon null.
 
 Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
 {
@@ -469,7 +470,8 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
       "descripcion": "nombre como aparece en la nota",
       "insumoMapeado": "nombre EXACTO del insumo de nuestro catálogo, o null si no hay match",
       "cantidad": 0,
-      "unidad": "kg/g/pza/litro/etc"
+      "unidad": "kg/g/pza/litro/etc",
+      "precioUnitario": 0
     }
   ]
 }`

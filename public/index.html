@@ -777,6 +777,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
           <th>Insumo</th>
           <th style="text-align:right;">Cantidad</th>
           <th>Unidad</th>
+          <th style="text-align:right;">$ Unit.</th>
           <th></th>
         </tr></thead>
         <tbody id="notaConfirmBody"></tbody>
@@ -2844,6 +2845,9 @@ function renderNotaConfirm(){
         <input type="number" id="notaCant_${i}" value="${item.cantidad}" min="0" step="any">
       </td>
       <td style="font-size:12px;color:#888;">${item.unidad}</td>
+      <td style="text-align:right;">
+        <input type="number" id="notaPrecio_${i}" value="${item.precioUnitario||''}" min="0" step="0.01" placeholder="—" style="width:70px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;text-align:right;outline:none;">
+      </td>
       <td>${!insumoMatch
         ? `<button class="btn btn-outline btn-sm" style="white-space:nowrap;font-size:11px;color:#0D2A5E;border-color:#0D2A5E;" onclick="abrirModalInsumoRapido('${item.descripcion.replace(/'/g,"\\'")}','${(item.unidad||'').replace(/'/g,"\\'")}',{type:'nota',idx:${i}})">＋ Dar de alta</button>`
         : ''}</td>
@@ -2855,11 +2859,13 @@ async function confirmarEntradaNota(){
   const proveedor = document.getElementById('notaProveedor').value.trim() || 'Proveedor (nota)';
   const concepto  = document.getElementById('notaConcepto').value.trim() || 'Entrada por nota de entrega';
   const hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+  const hoy  = HOY();
 
   let registrados = 0;
   notaItemsParsed.forEach((_,i)=>{
     const insumoId = document.getElementById('notaInsumo_'+i)?.value;
     const cantidad = parseFloat(document.getElementById('notaCant_'+i)?.value)||0;
+    const precio   = parseFloat(document.getElementById('notaPrecio_'+i)?.value)||0;
     if(!insumoId || !cantidad) return;
 
     const ins = insumos.find(x=>x.id===insumoId);
@@ -2867,9 +2873,21 @@ async function confirmarEntradaNota(){
 
     const stockAntes = ins.stock;
     ins.stock += cantidad;
+
+    // Actualizar costo del insumo si viene precio en la nota
+    if(precio > 0){
+      ins.costo = precio;
+      ins.ultimaRevisionPrecio = hoy;
+      // Registrar en proveedores del insumo
+      if(!ins.proveedores) ins.proveedores = [];
+      const prov = ins.proveedores.find(p=>p.nombre===proveedor);
+      if(prov){ prov.precio=precio; prov.fecha=hoy; }
+      else ins.proveedores.push({nombre:proveedor, precio, fecha:hoy});
+    }
+
     movimientos.push({
       id: genId('mov'),
-      fecha: HOY(), hora,
+      fecha: hoy, hora,
       tipo: 'ENTRADA',
       insumoId, nombre: ins.nombre,
       cantidad, unidad: ins.unidad,
