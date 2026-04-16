@@ -1522,13 +1522,30 @@ function precioAlerta(ins){
   return dias >= 7;
 }
 
+// Convierte cantidad de la receta (unidad de la receta) a la unidad del insumo
+// Ejemplo: receta dice 90 g, insumo está en kg → factor = 1/1000
+function factorUnidades(unidadReceta, unidadInsumo){
+  if(!unidadReceta || !unidadInsumo) return 1;
+  const ur = unidadReceta.toLowerCase().trim();
+  const ui = unidadInsumo.toLowerCase().trim();
+  if(ur === ui) return 1;
+  // Peso
+  const pesoA_g = { g:1, gr:1, gramo:1, gramos:1, kg:1000, kilo:1000, kilos:1000, kilogramo:1000, kilogramos:1000, lb:453.592, lbs:453.592, oz:28.3495 };
+  // Volumen
+  const volA_ml = { ml:1, mililitro:1, mililitros:1, l:1000, litro:1000, litros:1000, lt:1000, lts:1000, cl:10, dl:100, taza:240, 'taza':240, cucharada:15, 'cucharada':15, cucharadita:5, 'cucharadita':5, fl:29.5735, galon:3785.41, galón:3785.41 };
+  if(pesoA_g[ur] !== undefined && pesoA_g[ui] !== undefined) return pesoA_g[ur] / pesoA_g[ui];
+  if(volA_ml[ur]  !== undefined && volA_ml[ui]  !== undefined) return volA_ml[ur]  / volA_ml[ui];
+  return 1; // sin conversión conocida
+}
+
 function foodCost(receta){
   const insMap = {};
   insumos.forEach(i => { insMap[i.id] = i; });
   return (receta.ingredientes || []).reduce((s,ing)=>{
     const ins = insMap[ing.insumoId];
     if(!ins || !ins.costo) return s;
-    return s + ing.cantidad * ins.costo;
+    const factor = factorUnidades(ing.unidad || ins.unidad, ins.unidad);
+    return s + ing.cantidad * factor * ins.costo;
   }, 0);
 }
 
@@ -1745,7 +1762,7 @@ function renderRecetario(){
               <div class="receta-ing-nombre">${ing.nombre}</div>
               <div class="receta-ing-qty">${fmtNum(ing.cantidad)}</div>
               <div class="receta-ing-unit">${ing.unidad}</div>
-              <div class="receta-ing-costo">${insMap[ing.insumoId]?.costo ? fmtMoney(ing.cantidad * insMap[ing.insumoId].costo) : '—'}</div>
+              <div class="receta-ing-costo">${insMap[ing.insumoId]?.costo ? fmtMoney(ing.cantidad * factorUnidades(ing.unidad||insMap[ing.insumoId].unidad, insMap[ing.insumoId].unidad) * insMap[ing.insumoId].costo) : '—'}</div>
               <button class="ico-btn danger btn-sm" onclick="eliminarIngrediente(${ri},${ii})" style="width:26px;height:26px;font-size:12px;">✕</button>
             </div>
           `).join('')}
