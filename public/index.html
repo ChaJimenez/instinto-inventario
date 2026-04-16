@@ -2010,7 +2010,10 @@ function renderMovimientos(){
   else if(rango==='fecha' && fecha){ desdeF=fecha; hastaF=fecha; }
 
   let lista = [...movimientos].reverse();
-  if(busq)   lista = lista.filter(m=>(m.nombre||'').toLowerCase().includes(busq));
+  if(busq)   lista = lista.filter(m=>
+    (m.nombre||'').toLowerCase().includes(busq) ||
+    (m.responsable||'').toLowerCase().includes(busq)
+  );
   if(tipo)   lista = lista.filter(m=>m.tipo===tipo);
   if(desdeF) lista = lista.filter(m=>m.fecha>=desdeF && m.fecha<=hastaF);
 
