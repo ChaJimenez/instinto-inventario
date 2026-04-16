@@ -3809,23 +3809,60 @@ function cGetRango(){
 function renderCompras(){
   const { desde, hasta } = cGetRango();
 
-  // Filtrar órdenes recibidas en el período
+  // ── Fuente 1: órdenes recibidas ──
   const ordFiltradas = ordenes.filter(o =>
     o.estado === 'recibida' && o.fecha >= desde && o.fecha <= hasta
   );
+  // Folios ya cubiertos por órdenes
+  const foliosCubiertos = new Set(ordFiltradas.map(o => o.folio));
+
+  // ── Fuente 2: movimientos ENTRADA sin orden asociada ──
+  // Agrupa por referencia (folio) → sintetiza una "orden virtual"
+  const movEntradas = movimientos.filter(m =>
+    m.tipo === 'ENTRADA' &&
+    m.fecha >= desde && m.fecha <= hasta &&
+    !foliosCubiertos.has(m.referencia)
+  );
+
+  // Agrupar movimientos por referencia (folio compartido) o por fecha+responsable
+  const movGrupos = {};
+  movEntradas.forEach(m => {
+    const key = m.referencia || `${m.fecha}_${m.responsable||'—'}`;
+    if(!movGrupos[key]) movGrupos[key] = {
+      folio:      m.referencia || key,
+      fecha:      m.fecha,
+      proveedor:  m.responsable || '—',
+      items:      [],
+      total:      0,
+      estado:     'recibida',
+      desdeMov:   true,
+    };
+    movGrupos[key].items.push({
+      insumoId:  m.insumoId,
+      nombre:    m.nombre,
+      unidad:    m.unidad,
+      cantidad:  m.cantidad,
+      precioUnit: 0,
+      subtotal:  0,
+    });
+  });
+  const ordVirtuales = Object.values(movGrupos);
+
+  // ── Unión ──
+  const todas = [...ordFiltradas, ...ordVirtuales];
 
   // ── KPIs ──
-  const gastoTotal    = ordFiltradas.reduce((s,o)=>s+(o.total||0),0);
-  const proveedoresSet = new Set(ordFiltradas.map(o=>o.proveedor));
-  const productosSet   = new Set(ordFiltradas.flatMap(o=>(o.items||[]).map(it=>it.insumoId)));
+  const gastoTotal     = ordFiltradas.reduce((s,o)=>s+(o.total||0),0); // solo órdenes tienen precio
+  const proveedoresSet = new Set(todas.map(o=>o.proveedor));
+  const productosSet   = new Set(todas.flatMap(o=>(o.items||[]).map(it=>it.insumoId)));
 
-  document.getElementById('ckpiGasto').textContent       = fmtMoney(gastoTotal);
-  document.getElementById('ckpiOrdenes').textContent     = ordFiltradas.length;
+  document.getElementById('ckpiGasto').textContent       = gastoTotal>0 ? fmtMoney(gastoTotal) : '—';
+  document.getElementById('ckpiOrdenes').textContent     = todas.length;
   document.getElementById('ckpiProveedores').textContent = proveedoresSet.size;
   document.getElementById('ckpiProductos').textContent   = productosSet.size;
 
-  _renderCProveedores(ordFiltradas);
-  _renderCProductos(ordFiltradas);
+  _renderCProveedores(todas);
+  _renderCProductos(todas);
 }
 
 // ── Vista: por proveedor ──
@@ -3843,7 +3880,7 @@ function _renderCProveedores(ordFiltradas){
   const provList = Object.entries(provMap).sort((a,b)=>b[1].total-a[1].total);
 
   if(!provList.length){
-    panel.innerHTML = '<div class="empty">Sin órdenes recibidas en el período seleccionado.</div>';
+    panel.innerHTML = '<div class="empty">Sin compras registradas en el período seleccionado.</div>';
     return;
   }
 
@@ -3857,7 +3894,7 @@ function _renderCProveedores(ordFiltradas){
     const filas = ords.map(o=>`
       <tr>
         <td>${o.fecha}</td>
-        <td style="font-weight:600;color:#0D2A5E;">${o.folio}${o.sinDocumento?'<span style="font-size:10px;background:#fff8ed;color:#b06800;border:1px solid #e8a020;border-radius:8px;padding:1px 6px;margin-left:6px;font-weight:600;">sin doc</span>':''}</td>
+        <td style="font-weight:600;color:#0D2A5E;">${o.folio}${o.sinDocumento?'<span style="font-size:10px;background:#fff8ed;color:#b06800;border:1px solid #e8a020;border-radius:8px;padding:1px 6px;margin-left:6px;font-weight:600;">sin doc</span>':''}${o.desdeMov?'<span style="font-size:10px;background:#f0f4ff;color:#0D2A5E;border:1px solid #b0c4f5;border-radius:8px;padding:1px 6px;margin-left:6px;font-weight:600;">entrada manual</span>':''}</td>
         <td style="font-size:12px;color:#666;">${(o.items||[]).map(it=>`${it.nombre} ×${it.cantidad} ${it.unidad}`).join(', ')}</td>
         <td style="text-align:right;font-weight:600;">${o.total>0?fmtMoney(o.total):'—'}</td>
       </tr>`).join('');
