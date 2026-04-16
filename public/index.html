@@ -864,6 +864,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
         <label>Fecha venta</label>
         <input type="date" id="ventasPDFFecha">
       </div>
+      <div id="ventasPDFAltaWrap" style="display:none;margin-bottom:10px;">
+        <button class="btn btn-naranja btn-sm" onclick="altaTodasSinMatch()">＋ Dar de alta todos los sin match</button>
+        <span id="ventasPDFAltaInfo" style="font-size:12px;color:#888;margin-left:8px;"></span>
+      </div>
       <table class="nota-confirm-table">
         <thead><tr>
           <th>Platillo detectado</th>
@@ -3037,12 +3041,36 @@ async function procesarVentasPDFFile(file){
 
 function renderVentasPDFConfirm(){
   const tbody = document.getElementById('ventasPDFBody');
+
+  // Guardar selecciones actuales antes de re-renderizar
+  const selecciones = {};
+  const cantidades  = {};
+  ventasPDFParsed.forEach((_,i)=>{
+    const sel = document.getElementById('ventasReceta_'+i);
+    const qty = document.getElementById('ventasQty_'+i);
+    if(sel) selecciones[i] = sel.value;
+    if(qty) cantidades[i]  = qty.value;
+  });
+
+  const sinMatch = ventasPDFParsed.filter(item =>
+    !recetas.find(r => r.platillo.toLowerCase() === (item.recetaMapeada||'').toLowerCase()) &&
+    !recetas.find(r => r.platillo === item.descripcion)
+  );
+
+  const altaWrap = document.getElementById('ventasPDFAltaWrap');
+  const altaInfo = document.getElementById('ventasPDFAltaInfo');
+  if(sinMatch.length){
+    altaWrap.style.display = '';
+    altaInfo.textContent = `${sinMatch.length} platillo${sinMatch.length>1?'s':''} sin receta configurada`;
+  } else {
+    altaWrap.style.display = 'none';
+  }
+
   tbody.innerHTML = ventasPDFParsed.map((item, i)=>{
-    const recetaMatch = recetas.find(r=>r.platillo.toLowerCase()===(item.recetaMapeada||'').toLowerCase());
-    const recetaOpts  = recetas.map(r=>`<option value="${r.platillo}" ${recetaMatch?.platillo===r.platillo?'selected':''}>${r.platillo}</option>`).join('');
-    const darDeAltaBtn = !recetaMatch
-      ? `<button class="btn btn-outline btn-sm" style="white-space:nowrap;font-size:11px;color:#F5A020;border-color:#F5A020;" onclick="altaRecetaRapida('${item.descripcion.replace(/'/g,"\\'")}',${i})">＋ Dar de alta</button>`
-      : '';
+    const recetaMatch = recetas.find(r=>r.platillo.toLowerCase()===(item.recetaMapeada||'').toLowerCase())
+                     || recetas.find(r=>r.platillo===item.descripcion);
+    const recetaOpts  = recetas.map(r=>`<option value="${r.platillo}" ${(selecciones[i]||recetaMatch?.platillo)===r.platillo?'selected':''}>${r.platillo}</option>`).join('');
+    const qtyVal = cantidades[i] !== undefined ? cantidades[i] : item.cantidad;
     return `<tr>
       <td>${item.descripcion}${recetaMatch
         ? `<span class="nota-match">✓ mapeado</span>`
@@ -3055,41 +3083,34 @@ function renderVentasPDFConfirm(){
         </select>
       </td>
       <td style="text-align:right;">
-        <input type="number" id="ventasQty_${i}" value="${item.cantidad}" min="0" step="1"
+        <input type="number" id="ventasQty_${i}" value="${qtyVal}" min="0" step="1"
           style="width:70px;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:13px;text-align:right;outline:none;">
       </td>
-      <td>${darDeAltaBtn}</td>
     </tr>`;
   }).join('');
 }
 
-// Alta rápida de receta sin ingredientes — para platillos sin receta configurada
-function altaRecetaRapida(nombreSugerido, filaIdx){
-  const nombre = prompt(`Nombre del platillo en tu menú:\n(puedes corregir el nombre)`, nombreSugerido);
-  if(!nombre || !nombre.trim()) return;
-  const n = nombre.trim();
-  // Verificar que no exista
-  if(recetas.find(r=>r.platillo.toLowerCase()===n.toLowerCase())){
-    // Ya existe — solo seleccionarlo en el select
-    const sel = document.getElementById('ventasReceta_'+filaIdx);
-    if(sel){
-      const opt = [...sel.options].find(o=>o.value.toLowerCase()===n.toLowerCase());
-      if(opt) sel.value = opt.value;
-    }
-    toast(`"${n}" ya existe en el recetario — seleccionado ✓`);
-    return;
-  }
-  // Crear receta vacía (sin ingredientes aún)
-  recetas.push({ platillo: n, ingredientes: [] });
+// Da de alta en el recetario todos los platillos sin match de un jalón
+function altaTodasSinMatch(){
+  const sinMatch = ventasPDFParsed.filter(item =>
+    !recetas.find(r => r.platillo.toLowerCase() === (item.recetaMapeada||'').toLowerCase()) &&
+    !recetas.find(r => r.platillo === item.descripcion)
+  );
+  if(!sinMatch.length){ toast('Todos los platillos ya tienen receta'); return; }
+
+  let nuevos = 0;
+  sinMatch.forEach(item => {
+    const nombre = item.descripcion.trim();
+    if(!nombre) return;
+    if(recetas.find(r=>r.platillo.toLowerCase()===nombre.toLowerCase())) return;
+    recetas.push({ platillo: nombre, ingredientes: [] });
+    nuevos++;
+  });
+
+  if(!nuevos){ toast('Todos ya existían en el recetario'); return; }
   guardar();
-  // Rerender con la nueva receta disponible y pre-seleccionada
-  renderVentasPDFConfirm();
-  // Seleccionar en la fila correcta
-  setTimeout(()=>{
-    const sel = document.getElementById('ventasReceta_'+filaIdx);
-    if(sel) sel.value = n;
-  }, 50);
-  toast(`"${n}" agregado al recetario ✓ — agrega ingredientes después en la pestaña Recetario`);
+  renderVentasPDFConfirm(); // re-render: ahora tienen match, preserva cantidades
+  toast(`✓ ${nuevos} platillo${nuevos>1?'s':''} dados de alta — agrega ingredientes en Recetario`);
 }
 
 async function confirmarVentasPDF(){
