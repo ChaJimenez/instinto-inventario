@@ -147,6 +147,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .conteo-igual{background:#f5f5f5;color:#666;}
 .cbadge-faltante{background:#ffe8e8;color:#c41e1e;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
 .cbadge-sobrante{background:#e8f4e8;color:#2d5a2d;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+/* ── COMPRA SIN DOC ── */
+.csd-fila{display:grid;grid-template-columns:1fr 80px 90px 32px;gap:8px;align-items:center;background:#f9f9f7;padding:8px 10px;border-radius:8px;}
+.csd-fila select,.csd-fila input{padding:7px 10px;border:1px solid #ddd;border-radius:6px;font-size:13px;background:#fff;outline:none;width:100%;}
+.csd-fila .del-btn{width:28px;height:28px;border-radius:6px;border:1px solid #fcc;background:#fff;color:#e24b4a;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.csd-fila .del-btn:hover{background:#fff0f0;}
+@media(max-width:480px){.csd-fila{grid-template-columns:1fr 70px 80px 28px;}}
 /* ── DASHBOARD COMPRAS ── */
 .compras-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
 @media(max-width:560px){.compras-kpis{grid-template-columns:repeat(2,1fr);}}
@@ -385,6 +391,11 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 ══════════════════════════════════════════ -->
 <div id="screen-compras" class="screen">
 
+  <div class="sec-header" style="margin-bottom:14px;">
+    <span class="sec-title">Dashboard de Compras</span>
+    <button class="btn btn-naranja btn-sm" onclick="abrirCompraSinDoc()">+ Sin documento</button>
+  </div>
+
   <!-- KPIs -->
   <div class="compras-kpis">
     <div class="ckpi"><div class="val" id="ckpiGasto">$0</div><div class="lbl">Gasto total</div></div>
@@ -565,6 +576,42 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal('modalMovimiento')">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarMovimiento()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Compra sin documento -->
+<div class="modal-overlay" id="modalCompraSinDoc">
+  <div class="modal modal-lg">
+    <h2>Compra sin documento</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Fecha</label>
+        <input type="date" id="csdFecha" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Proveedor <span style="color:#bbb;">(opcional)</span></label>
+        <input type="text" id="csdProveedor" placeholder="Nombre del proveedor" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none;">
+      </div>
+    </div>
+
+    <div style="font-size:12px;color:#666;margin-bottom:8px;font-weight:600;">Insumos comprados</div>
+    <div id="csdFilas" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+    <button class="btn btn-outline btn-sm" onclick="addFilaCompraSinDoc()" style="margin-bottom:14px;">+ Agregar insumo</button>
+
+    <div>
+      <label style="font-size:12px;color:#666;display:block;margin-bottom:4px;">Notas <span style="color:#bbb;">(opcional)</span></label>
+      <input type="text" id="csdNotas" placeholder="Ej. Compra urgente en tienda de abarrotes" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;outline:none;">
+    </div>
+
+    <div id="csdTotalRow" style="text-align:right;font-size:15px;font-weight:700;color:#0D2A5E;padding:12px 0 0;display:none;">
+      Total: <span id="csdTotal">$0</span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal('modalCompraSinDoc')">Cancelar</button>
+      <button class="btn btn-naranja" onclick="confirmarCompraSinDoc()">✓ Registrar compra</button>
     </div>
   </div>
 </div>
@@ -3592,6 +3639,133 @@ function iniciarDragDrop(){
 }
 
 // ══════════════════════════════════════
+// COMPRA SIN DOCUMENTO
+// ══════════════════════════════════════
+let csdFilaCount = 0;
+
+function abrirCompraSinDoc(){
+  csdFilaCount = 0;
+  document.getElementById('csdFecha').value = HOY();
+  document.getElementById('csdProveedor').value = '';
+  document.getElementById('csdNotas').value = '';
+  document.getElementById('csdFilas').innerHTML = '';
+  document.getElementById('csdTotalRow').style.display = 'none';
+  addFilaCompraSinDoc();
+  abrirModal('modalCompraSinDoc');
+}
+
+function addFilaCompraSinDoc(){
+  const idx = csdFilaCount++;
+  const opts = insumos
+    .slice().sort((a,b)=>a.nombre.localeCompare(b.nombre))
+    .map(i=>`<option value="${i.id}">${i.nombre} (${i.unidad})</option>`).join('');
+
+  const div = document.createElement('div');
+  div.className = 'csd-fila';
+  div.id = `csd-fila-${idx}`;
+  div.innerHTML = `
+    <select id="csd-ins-${idx}" title="Insumo">
+      <option value="">— Insumo —</option>
+      ${opts}
+    </select>
+    <input type="number" id="csd-qty-${idx}" placeholder="Cant." min="0" step="any" oninput="recalcCSD()">
+    <input type="number" id="csd-precio-${idx}" placeholder="$ unit" min="0" step="0.01" oninput="recalcCSD()">
+    <button class="del-btn" onclick="quitarFilaCSD(${idx})" title="Quitar">×</button>`;
+  document.getElementById('csdFilas').appendChild(div);
+}
+
+function quitarFilaCSD(idx){
+  const el = document.getElementById(`csd-fila-${idx}`);
+  if(el) el.remove();
+  recalcCSD();
+}
+
+function recalcCSD(){
+  let total = 0;
+  document.querySelectorAll('#csdFilas .csd-fila').forEach(row => {
+    const idxMatch = row.id.match(/csd-fila-(\d+)/);
+    if(!idxMatch) return;
+    const i = idxMatch[1];
+    const qty   = parseFloat(document.getElementById(`csd-qty-${i}`)?.value) || 0;
+    const precio= parseFloat(document.getElementById(`csd-precio-${i}`)?.value) || 0;
+    total += qty * precio;
+  });
+  const row = document.getElementById('csdTotalRow');
+  if(total > 0){
+    row.style.display = '';
+    document.getElementById('csdTotal').textContent = fmtMoney(total);
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+function confirmarCompraSinDoc(){
+  const fecha     = document.getElementById('csdFecha').value || HOY();
+  const proveedor = document.getElementById('csdProveedor').value.trim() || 'Sin proveedor';
+  const notas     = document.getElementById('csdNotas').value.trim();
+  const hora      = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+
+  // Leer filas
+  const items = [];
+  document.querySelectorAll('#csdFilas .csd-fila').forEach(row => {
+    const m = row.id.match(/csd-fila-(\d+)/);
+    if(!m) return;
+    const i        = m[1];
+    const insumoId = document.getElementById(`csd-ins-${i}`)?.value;
+    const qty      = parseFloat(document.getElementById(`csd-qty-${i}`)?.value) || 0;
+    const precio   = parseFloat(document.getElementById(`csd-precio-${i}`)?.value) || 0;
+    if(!insumoId || !qty) return;
+    const ins = insumos.find(x=>x.id===insumoId);
+    if(!ins) return;
+    items.push({ insumoId, nombre:ins.nombre, unidad:ins.unidad, cantidad:qty, precioUnit:precio, subtotal:qty*precio });
+  });
+
+  if(!items.length){ toast('Agrega al menos un insumo'); return; }
+
+  const total  = items.reduce((s,it)=>s+it.subtotal, 0);
+  const folio  = `SD-${fecha}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+
+  // Actualizar stock y crear movimientos
+  const insMap = {};
+  insumos.forEach(i=>{ insMap[i.id]=i; });
+
+  items.forEach(it => {
+    const ins = insMap[it.insumoId];
+    if(!ins) return;
+    const stockAntes = ins.stock;
+    ins.stock = ins.stock + it.cantidad;
+    // Actualizar último precio del proveedor si se registró precio
+    if(it.precioUnit > 0){
+      if(!ins.proveedores) ins.proveedores = [];
+      const prov = ins.proveedores.find(p=>p.nombre===proveedor);
+      if(prov){ prov.precio=it.precioUnit; prov.fecha=fecha; }
+      else ins.proveedores.push({nombre:proveedor, precio:it.precioUnit, fecha});
+    }
+    movimientos.push({
+      id: genId('mov'),
+      fecha, hora,
+      tipo: 'ENTRADA',
+      insumoId: ins.id, nombre: ins.nombre,
+      cantidad: it.cantidad, unidad: ins.unidad,
+      responsable: proveedor,
+      concepto: `${folio}${notas?' — '+notas:''}`,
+      referencia: folio,
+      stockAntes, stockDespues: ins.stock,
+    });
+  });
+
+  // Guardar como orden "recibida" para que aparezca en dashboard Compras
+  ordenes.push({ folio, fecha, proveedor, items, total, notas, estado:'recibida', sinDocumento:true });
+
+  guardar();
+  cerrarModal('modalCompraSinDoc');
+  renderStock();
+  renderMovimientos();
+  renderCompras();
+  toast(`✓ Compra registrada (${items.length} insumo${items.length>1?'s':''}) — stock actualizado`);
+}
+
+// ══════════════════════════════════════
 // DASHBOARD COMPRAS
 // ══════════════════════════════════════
 let cVistaActual = 'proveedor';
@@ -3679,12 +3853,13 @@ function _renderCProveedores(ordFiltradas){
     const prods  = new Set(ords.flatMap(o=>(o.items||[]).map(it=>it.nombre)));
     const inicial = nombre.charAt(0).toUpperCase();
 
+    const haySinDoc = ords.some(o=>o.sinDocumento);
     const filas = ords.map(o=>`
       <tr>
         <td>${o.fecha}</td>
-        <td style="font-weight:600;color:#0D2A5E;">${o.folio}</td>
-        <td style="font-size:12px;color:#666;">${(o.items||[]).map(it=>`${it.nombre} ×${it.cantidad}${it.unidad}`).join(', ')}</td>
-        <td style="text-align:right;font-weight:600;">${fmtMoney(o.total||0)}</td>
+        <td style="font-weight:600;color:#0D2A5E;">${o.folio}${o.sinDocumento?'<span style="font-size:10px;background:#fff8ed;color:#b06800;border:1px solid #e8a020;border-radius:8px;padding:1px 6px;margin-left:6px;font-weight:600;">sin doc</span>':''}</td>
+        <td style="font-size:12px;color:#666;">${(o.items||[]).map(it=>`${it.nombre} ×${it.cantidad} ${it.unidad}`).join(', ')}</td>
+        <td style="text-align:right;font-weight:600;">${o.total>0?fmtMoney(o.total):'—'}</td>
       </tr>`).join('');
 
     return `
