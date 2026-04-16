@@ -324,9 +324,9 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
   </div>
 
   <!-- Banner Toteat: días sin PDF -->
-  <div id="toteatBanner" class="ventas-banner hidden" style="background:#fff0f0;border-color:#e24b4a;">
-    <div class="ventas-banner-txt" id="toteatBannerTxt" style="color:#c41e1e;"></div>
-    <button class="btn btn-sm" style="background:#e24b4a;color:#fff;border:none;" onclick="abrirVentasPDF()">Subir PDF →</button>
+  <div id="toteatBanner" class="ventas-banner hidden" style="background:#fff0f0;border-color:#e24b4a;flex-direction:column;align-items:flex-start;gap:8px;">
+    <div style="font-size:13px;font-weight:600;color:#c41e1e;">⚠️ Días de Toteat sin PDF</div>
+    <div id="toteatBannerDias" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
   </div>
 
   <!-- Stats mini -->
@@ -4160,19 +4160,45 @@ async function actualizarBannerToteat(){
     if(!r.ok) return;
     const { dias } = await r.json();
     const banner = document.getElementById('toteatBanner');
-    const txt    = document.getElementById('toteatBannerTxt');
-    if(!banner) return;
+    const cont   = document.getElementById('toteatBannerDias');
+    if(!banner || !cont) return;
 
     const faltantes = [];
-    for(let i=1; i<=3; i++){
+    for(let i=1; i<=7; i++){
       const d = new Date(Date.now()-i*86400000).toISOString().slice(0,10);
       if(!dias.includes(d)) faltantes.push(d);
     }
     if(!faltantes.length){ banner.classList.add('hidden'); return; }
     banner.classList.remove('hidden');
+
     const fmt = f => f.split('-').reverse().join('/');
-    txt.textContent = `⚠️ Sin PDF de Toteat: ${faltantes.map(fmt).join(', ')}`;
+    cont.innerHTML = faltantes.map(fecha => `
+      <div style="display:flex;align-items:center;gap:6px;background:#fff;border:1px solid #e24b4a;border-radius:8px;padding:5px 10px;">
+        <span style="font-size:13px;font-weight:600;color:#c41e1e;">${fmt(fecha)}</span>
+        <button onclick="abrirVentasPDFConFecha('${fecha}')" style="padding:3px 8px;font-size:11px;background:#e24b4a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;">Subir PDF</button>
+        <button onclick="marcarToteatDia('${fecha}')" style="padding:3px 8px;font-size:11px;background:#fff;color:#888;border:1px solid #ccc;border-radius:6px;cursor:pointer;">Ya lo subí ✓</button>
+      </div>`).join('');
   } catch(_){}
+}
+
+async function marcarToteatDia(fecha){
+  try {
+    await fetch('/api/toteat-dias', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ fecha }),
+    });
+    actualizarBannerToteat();
+    toast(`✓ ${fecha.split('-').reverse().join('/')} marcado como subido`);
+  } catch(_){ toast('Error al marcar'); }
+}
+
+function abrirVentasPDFConFecha(fecha){
+  abrirVentasPDF();
+  // Pre-llenar la fecha del modal con el día faltante
+  setTimeout(()=>{
+    const inp = document.getElementById('ventasPDFFecha');
+    if(inp) inp.value = fecha;
+  }, 50);
 }
 
 // ── Auto-corte: procesa días del POS pendientes al cargar ──
