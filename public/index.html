@@ -147,6 +147,44 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .conteo-igual{background:#f5f5f5;color:#666;}
 .cbadge-faltante{background:#ffe8e8;color:#c41e1e;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
 .cbadge-sobrante{background:#e8f4e8;color:#2d5a2d;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+/* ── DASHBOARD COMPRAS ── */
+.compras-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+@media(max-width:560px){.compras-kpis{grid-template-columns:repeat(2,1fr);}}
+.ckpi{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:13px 14px;text-align:center;}
+.ckpi .val{font-size:20px;font-weight:700;color:#0D2A5E;line-height:1.1;}
+.ckpi .lbl{font-size:11px;color:#888;margin-top:3px;}
+.compras-toggle{display:flex;gap:4px;background:#f0f0f0;border-radius:8px;padding:3px;margin-bottom:14px;width:fit-content;}
+.compras-toggle-btn{padding:6px 16px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:#888;background:none;transition:all 0.15s;}
+.compras-toggle-btn.active{background:#fff;color:#0D2A5E;box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+.cprov-card{background:#fff;border:1px solid #e8e8e8;border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.cprov-header{padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;}
+.cprov-avatar{width:36px;height:36px;border-radius:50%;background:#0D2A5E;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cprov-nombre{flex:1;font-size:14px;font-weight:600;}
+.cprov-total{font-size:16px;font-weight:700;color:#0D2A5E;}
+.cprov-meta{font-size:11px;color:#aaa;}
+.cprov-chevron{font-size:12px;color:#aaa;transition:transform 0.2s;}
+.cprov-body{display:none;border-top:1px solid #f0f0f0;padding:12px 16px;}
+.cprov-body.open{display:block;}
+.cprov-table{width:100%;border-collapse:collapse;font-size:13px;}
+.cprov-table th{text-align:left;padding:6px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
+.cprov-table td{padding:7px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.cprov-table tr:last-child td{border-bottom:none;}
+.cprod-card{background:#fff;border:1px solid #e8e8e8;border-radius:10px;margin-bottom:10px;overflow:hidden;}
+.cprod-header{padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;}
+.cprod-nombre{flex:1;font-size:14px;font-weight:500;}
+.cprod-precio-actual{font-size:15px;font-weight:700;color:#0D2A5E;}
+.cprod-var{font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap;}
+.cprod-var.up{background:#fff0f0;color:#c41e1e;}
+.cprod-var.down{background:#eaf3de;color:#2d6e2d;}
+.cprod-var.flat{background:#f5f5f5;color:#666;}
+.cprod-body{display:none;border-top:1px solid #f0f0f0;padding:14px 16px;}
+.cprod-body.open{display:block;}
+.cprod-chart-wrap{margin-bottom:14px;}
+.cprod-hist-table{width:100%;border-collapse:collapse;font-size:12px;}
+.cprod-hist-table th{text-align:left;padding:5px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
+.cprod-hist-table td{padding:5px 8px;border-bottom:1px solid #f8f8f8;}
+.compras-periodo{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.compras-periodo select,.compras-periodo input{padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;}
 /* ── EDITAR RECETARIO EN TABLA ── */
 .edit-rec-table{width:100%;border-collapse:collapse;font-size:13px;}
 .edit-rec-table th{background:#f9f9f7;text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:2px solid #e8e8e8;font-weight:600;position:sticky;top:0;}
@@ -253,6 +291,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
   <button class="tab active" onclick="switchTab('stock')">📦 Stock</button>
   <button class="tab" onclick="switchTab('recetario')">📋 Recetario</button>
   <button class="tab" onclick="switchTab('ordenes')">🛒 Órdenes</button>
+  <button class="tab" onclick="switchTab('compras')">💰 Compras</button>
   <button class="tab" onclick="switchTab('movimientos')">📊 Movimientos</button>
   <button class="tab" onclick="switchTab('config')">⚙️ Config</button>
 </div>
@@ -339,6 +378,44 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <button class="btn btn-primary btn-sm" onclick="abrirModalOrden()">+ Nueva Orden</button>
   </div>
   <div id="ordenList"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN: COMPRAS
+══════════════════════════════════════════ -->
+<div id="screen-compras" class="screen">
+
+  <!-- KPIs -->
+  <div class="compras-kpis">
+    <div class="ckpi"><div class="val" id="ckpiGasto">$0</div><div class="lbl">Gasto total</div></div>
+    <div class="ckpi"><div class="val" id="ckpiOrdenes">0</div><div class="lbl">Órdenes recibidas</div></div>
+    <div class="ckpi"><div class="val" id="ckpiProveedores">0</div><div class="lbl">Proveedores</div></div>
+    <div class="ckpi"><div class="val" id="ckpiProductos">0</div><div class="lbl">Productos comprados</div></div>
+  </div>
+
+  <!-- Filtro período -->
+  <div class="compras-periodo">
+    <select id="cPeriodoPreset" onchange="aplicarPeriodoPreset()">
+      <option value="30">Últimos 30 días</option>
+      <option value="90">Últimos 90 días</option>
+      <option value="180">Últimos 6 meses</option>
+      <option value="365">Último año</option>
+      <option value="0">Todo</option>
+      <option value="custom">Personalizado</option>
+    </select>
+    <input type="date" id="cDesde" onchange="renderCompras()" style="display:none;">
+    <input type="date" id="cHasta" onchange="renderCompras()" style="display:none;">
+  </div>
+
+  <!-- Toggle: proveedor / producto -->
+  <div class="compras-toggle">
+    <button class="compras-toggle-btn active" id="cBtnProv" onclick="setCVistaCompras('proveedor')">Por proveedor</button>
+    <button class="compras-toggle-btn" id="cBtnProd" onclick="setCVistaCompras('producto')">Por producto</button>
+  </div>
+
+  <!-- Contenido -->
+  <div id="cVistaProveedores"></div>
+  <div id="cVistaProductos" style="display:none;"></div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -1433,7 +1510,7 @@ function nextFolio(){
 // ══════════════════════════════════════
 // NAV
 // ══════════════════════════════════════
-const TABS = ['stock','recetario','ordenes','movimientos','config'];
+const TABS = ['stock','recetario','ordenes','compras','movimientos','config'];
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',TABS[i]===tab));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -1441,6 +1518,7 @@ function switchTab(tab){
   if(tab==='stock')       renderStock();
   if(tab==='recetario')   renderRecetario();
   if(tab==='ordenes')     renderOrdenes();
+  if(tab==='compras')     renderCompras();
   if(tab==='movimientos') renderMovimientos();
   if(tab==='config')      renderConfig();
 }
@@ -3511,6 +3589,247 @@ function iniciarDragDrop(){
       procesarVentasPDFFile(file);
     });
   }
+}
+
+// ══════════════════════════════════════
+// DASHBOARD COMPRAS
+// ══════════════════════════════════════
+let cVistaActual = 'proveedor';
+
+function setCVistaCompras(v){
+  cVistaActual = v;
+  document.getElementById('cBtnProv').classList.toggle('active', v==='proveedor');
+  document.getElementById('cBtnProd').classList.toggle('active', v==='producto');
+  document.getElementById('cVistaProveedores').style.display = v==='proveedor' ? '' : 'none';
+  document.getElementById('cVistaProductos').style.display   = v==='producto'  ? '' : 'none';
+}
+
+function aplicarPeriodoPreset(){
+  const val = document.getElementById('cPeriodoPreset').value;
+  const desde = document.getElementById('cDesde');
+  const hasta  = document.getElementById('cHasta');
+  if(val==='custom'){
+    desde.style.display = '';
+    hasta.style.display  = '';
+  } else {
+    desde.style.display = 'none';
+    hasta.style.display  = 'none';
+  }
+  renderCompras();
+}
+
+function cGetRango(){
+  const val = document.getElementById('cPeriodoPreset').value;
+  if(val==='custom'){
+    return {
+      desde: document.getElementById('cDesde').value || '2000-01-01',
+      hasta:  document.getElementById('cHasta').value  || new Date().toISOString().slice(0,10),
+    };
+  }
+  const dias = parseInt(val) || 0;
+  if(!dias) return { desde:'2000-01-01', hasta:'2099-12-31' };
+  const d = new Date(Date.now() - dias*86400000).toISOString().slice(0,10);
+  return { desde: d, hasta: '2099-12-31' };
+}
+
+function renderCompras(){
+  const { desde, hasta } = cGetRango();
+
+  // Filtrar órdenes recibidas en el período
+  const ordFiltradas = ordenes.filter(o =>
+    o.estado === 'recibida' && o.fecha >= desde && o.fecha <= hasta
+  );
+
+  // ── KPIs ──
+  const gastoTotal    = ordFiltradas.reduce((s,o)=>s+(o.total||0),0);
+  const proveedoresSet = new Set(ordFiltradas.map(o=>o.proveedor));
+  const productosSet   = new Set(ordFiltradas.flatMap(o=>(o.items||[]).map(it=>it.insumoId)));
+
+  document.getElementById('ckpiGasto').textContent       = fmtMoney(gastoTotal);
+  document.getElementById('ckpiOrdenes').textContent     = ordFiltradas.length;
+  document.getElementById('ckpiProveedores').textContent = proveedoresSet.size;
+  document.getElementById('ckpiProductos').textContent   = productosSet.size;
+
+  _renderCProveedores(ordFiltradas);
+  _renderCProductos(ordFiltradas);
+}
+
+// ── Vista: por proveedor ──
+function _renderCProveedores(ordFiltradas){
+  const panel = document.getElementById('cVistaProveedores');
+
+  // Agrupar por proveedor
+  const provMap = {};
+  ordFiltradas.forEach(o => {
+    if(!provMap[o.proveedor]) provMap[o.proveedor] = { ordenes:[], total:0 };
+    provMap[o.proveedor].ordenes.push(o);
+    provMap[o.proveedor].total += o.total||0;
+  });
+
+  const provList = Object.entries(provMap).sort((a,b)=>b[1].total-a[1].total);
+
+  if(!provList.length){
+    panel.innerHTML = '<div class="empty">Sin órdenes recibidas en el período seleccionado.</div>';
+    return;
+  }
+
+  panel.innerHTML = provList.map(([nombre, data],pi)=>{
+    const ords   = data.ordenes.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const ultima = ords[0]?.fecha || '';
+    const prods  = new Set(ords.flatMap(o=>(o.items||[]).map(it=>it.nombre)));
+    const inicial = nombre.charAt(0).toUpperCase();
+
+    const filas = ords.map(o=>`
+      <tr>
+        <td>${o.fecha}</td>
+        <td style="font-weight:600;color:#0D2A5E;">${o.folio}</td>
+        <td style="font-size:12px;color:#666;">${(o.items||[]).map(it=>`${it.nombre} ×${it.cantidad}${it.unidad}`).join(', ')}</td>
+        <td style="text-align:right;font-weight:600;">${fmtMoney(o.total||0)}</td>
+      </tr>`).join('');
+
+    return `
+    <div class="cprov-card">
+      <div class="cprov-header" onclick="toggleCProv('cprov${pi}')">
+        <div class="cprov-avatar">${inicial}</div>
+        <div style="flex:1;">
+          <div class="cprov-nombre">${nombre}</div>
+          <div class="cprov-meta">${ords.length} orden${ords.length>1?'es':''} · ${prods.size} producto${prods.size>1?'s':''} · última: ${ultima}</div>
+        </div>
+        <div class="cprov-total">${fmtMoney(data.total)}</div>
+        <span class="cprov-chevron" id="chev-cprov${pi}">▼</span>
+      </div>
+      <div class="cprov-body" id="cprov${pi}">
+        <table class="cprov-table">
+          <thead><tr><th>Fecha</th><th>Folio</th><th>Productos</th><th style="text-align:right">Total</th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCProv(id){
+  const el  = document.getElementById(id);
+  const chv = document.getElementById('chev-'+id);
+  const open = el.classList.toggle('open');
+  if(chv) chv.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+// ── Vista: por producto ──
+function _renderCProductos(ordFiltradas){
+  const panel = document.getElementById('cVistaProductos');
+
+  // Agrupar compras por insumoId
+  const prodMap = {}; // insumoId → { nombre, unidad, compras: [{fecha,precio,proveedor,cantidad,folio}] }
+  ordFiltradas.forEach(o => {
+    (o.items||[]).forEach(it => {
+      if(!it.insumoId) return;
+      if(!prodMap[it.insumoId]) prodMap[it.insumoId] = { nombre:it.nombre, unidad:it.unidad, compras:[] };
+      prodMap[it.insumoId].compras.push({
+        fecha: o.fecha, precio: it.precioUnit||0,
+        cantidad: it.cantidad, proveedor: o.proveedor, folio: o.folio,
+      });
+    });
+  });
+
+  const prodList = Object.entries(prodMap).sort((a,b)=>a[1].nombre.localeCompare(b[1].nombre));
+
+  if(!prodList.length){
+    panel.innerHTML = '<div class="empty">Sin productos comprados en el período.</div>';
+    return;
+  }
+
+  panel.innerHTML = prodList.map(([insId, data],pi)=>{
+    const comprasOrdenadas = [...data.compras].sort((a,b)=>a.fecha.localeCompare(b.fecha));
+    const precios = comprasOrdenadas.map(c=>c.precio).filter(p=>p>0);
+    const precioActual = precios.at(-1) || 0;
+    const precioInicial= precios[0]     || 0;
+    const pctVar = precioInicial ? ((precioActual-precioInicial)/precioInicial*100) : 0;
+    const varClass  = pctVar>1 ? 'up' : pctVar<-1 ? 'down' : 'flat';
+    const varLabel  = pctVar>1 ? `▲ ${pctVar.toFixed(1)}%` : pctVar<-1 ? `▼ ${Math.abs(pctVar).toFixed(1)}%` : '— Sin cambio';
+    const chartSVG  = precios.length >= 2 ? _sparkline(precios) : '<span style="font-size:11px;color:#aaa;">Solo 1 precio</span>';
+
+    const filas = [...comprasOrdenadas].reverse().map(c=>`
+      <tr>
+        <td>${c.fecha}</td>
+        <td>${c.proveedor}</td>
+        <td>${c.folio}</td>
+        <td style="text-align:right">${fmtNum(c.cantidad)} ${data.unidad}</td>
+        <td style="text-align:right;font-weight:600;color:#0D2A5E;">${c.precio>0?fmtMoney(c.precio):'—'}</td>
+      </tr>`).join('');
+
+    return `
+    <div class="cprod-card">
+      <div class="cprod-header" onclick="toggleCProd('cprod${pi}')">
+        <div style="flex:1;">
+          <div class="cprod-nombre">${data.nombre}</div>
+          <div style="font-size:11px;color:#aaa;">${comprasOrdenadas.length} compra${comprasOrdenadas.length>1?'s':''} · ${data.unidad}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${precioActual>0 ? `<div class="cprod-precio-actual">${fmtMoney(precioActual)}</div>` : ''}
+          ${precios.length>=2 ? `<span class="cprod-var ${varClass}">${varLabel}</span>` : ''}
+        </div>
+        <span class="cprov-chevron" id="chev-cprod${pi}">▼</span>
+      </div>
+      <div class="cprod-body" id="cprod${pi}">
+        ${precios.length>=2 ? `<div class="cprod-chart-wrap">${chartSVG}</div>` : ''}
+        <table class="cprod-hist-table">
+          <thead><tr><th>Fecha</th><th>Proveedor</th><th>Folio</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Precio unit.</th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleCProd(id){
+  const el  = document.getElementById(id);
+  const chv = document.getElementById('chev-'+id);
+  const open = el.classList.toggle('open');
+  if(chv) chv.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+// ── Sparkline SVG ──
+function _sparkline(precios){
+  const W=220, H=48, pad=6;
+  const min = Math.min(...precios);
+  const max = Math.max(...precios);
+  const rng = max-min || 1;
+  const n   = precios.length;
+
+  const pts = precios.map((p,i)=>{
+    const x = pad + (i/(n-1))*(W-pad*2);
+    const y = pad + (1-(p-min)/rng)*(H-pad*2);
+    return [x,y];
+  });
+
+  // Relleno (área bajo la curva)
+  const pathD = pts.map((p,i)=>(i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`)).join(' ');
+  const areaD = pathD + ` L${pts.at(-1)[0]},${H-pad} L${pts[0][0]},${H-pad} Z`;
+
+  const isUp  = precios.at(-1) >= precios[0];
+  const color = isUp ? '#e24b4a' : '#3b6d11';
+  const fill  = isUp ? '#fff0f0' : '#eaf3de';
+
+  // Puntos (primer, último)
+  const dots = [pts[0], pts.at(-1)].map(([x,y])=>
+    `<circle cx="${x}" cy="${y}" r="3" fill="${color}"/>`).join('');
+
+  // Labels
+  const labelMin = `<text x="${pad}" y="${H}" font-size="9" fill="#aaa" text-anchor="start">${fmtMoney(min)}</text>`;
+  const labelMax = `<text x="${pad}" y="${pad+4}" font-size="9" fill="#aaa" text-anchor="start">${fmtMoney(max)}</text>`;
+  const labelFirst = `<text x="${pts[0][0]}" y="${H}" font-size="9" fill="#888" text-anchor="start">${precios[0]!==min&&precios[0]!==max?fmtMoney(precios[0]):''}</text>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;height:${H}px;display:block;margin-bottom:8px;">
+    <path d="${areaD}" fill="${fill}" stroke="none"/>
+    <path d="${pathD}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+    ${labelMin}${labelMax}
+  </svg>
+  <div style="display:flex;justify-content:space-between;font-size:11px;color:#aaa;margin-bottom:10px;padding:0 ${pad}px;">
+    <span>${precios[0]!==undefined?fmtMoney(precios[0]):'—'} (primer precio)</span>
+    <span style="color:${color};font-weight:600;">${fmtMoney(precios.at(-1))} (último)</span>
+  </div>`;
 }
 
 // ══════════════════════════════════════
