@@ -530,6 +530,20 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <input type="hidden" id="insumoEditId">
     <div class="form-row"><label>Nombre</label><input type="text" id="insumoNombre" placeholder="Carne molida de res"></div>
     <div class="form-row">
+      <label>Categoría</label>
+      <select id="insumoCategoria">
+        <option value="Carnes">Carnes</option>
+        <option value="Lácteos">Lácteos</option>
+        <option value="Verduras">Verduras</option>
+        <option value="Frutas">Frutas</option>
+        <option value="Bebidas">Bebidas</option>
+        <option value="Abarrotes">Abarrotes</option>
+        <option value="Empaques">Empaques</option>
+        <option value="Limpieza">Limpieza</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+    <div class="form-row">
       <label>Unidad</label>
       <select id="insumoUnidad">
         <option value="g">g (gramos)</option>
@@ -2083,11 +2097,12 @@ function abrirModalInsumo(id){
   const ins = id ? insumos.find(i=>i.id===id) : null;
   document.getElementById('modalInsumoTitulo').textContent = ins ? 'Editar Insumo' : 'Agregar Insumo';
   document.getElementById('insumoEditId').value  = ins?.id || '';
-  document.getElementById('insumoNombre').value  = ins?.nombre || '';
-  document.getElementById('insumoUnidad').value  = ins?.unidad || 'g';
-  document.getElementById('insumoStock').value   = ins?.stock ?? '';
-  document.getElementById('insumoMin').value     = ins?.stockMin ?? '';
-  document.getElementById('insumoCosto').value   = ins?.costo ?? '';
+  document.getElementById('insumoNombre').value     = ins?.nombre || '';
+  document.getElementById('insumoCategoria').value  = ins?.categoria || 'Otro';
+  document.getElementById('insumoUnidad').value     = ins?.unidad || 'g';
+  document.getElementById('insumoStock').value      = ins?.stock ?? '';
+  document.getElementById('insumoMin').value        = ins?.stockMin ?? '';
+  document.getElementById('insumoCosto').value      = ins?.costo ?? '';
   // Proveedores
   const provList = document.getElementById('provEditList');
   provList.innerHTML = '';
@@ -2133,12 +2148,13 @@ function agregarProvRow(prov, pi){
 }
 
 function guardarInsumo(){
-  const nombre = document.getElementById('insumoNombre').value.trim();
+  const nombre    = document.getElementById('insumoNombre').value.trim();
   if(!nombre){ toast('Escribe el nombre'); return; }
-  const unidad = document.getElementById('insumoUnidad').value;
-  const stock  = parseFloat(document.getElementById('insumoStock').value)||0;
-  const min    = parseFloat(document.getElementById('insumoMin').value)||0;
-  const costo  = parseFloat(document.getElementById('insumoCosto').value)||0;
+  const categoria = document.getElementById('insumoCategoria').value || 'Otro';
+  const unidad    = document.getElementById('insumoUnidad').value;
+  const stock     = parseFloat(document.getElementById('insumoStock').value)||0;
+  const min       = parseFloat(document.getElementById('insumoMin').value)||0;
+  const costo     = parseFloat(document.getElementById('insumoCosto').value)||0;
 
   // Leer proveedores del DOM
   const provRows = document.getElementById('provEditList').children;
@@ -2154,11 +2170,11 @@ function guardarInsumo(){
   if(editId){
     const idx = insumos.findIndex(i=>i.id===editId);
     if(idx>=0){
-      insumos[idx] = {...insumos[idx], nombre, unidad, stock, stockMin:min, costo, proveedores,
+      insumos[idx] = {...insumos[idx], nombre, categoria, unidad, stock, stockMin:min, costo, proveedores,
         ultimaRevisionPrecio: costo !== insumos[idx].costo ? HOY() : insumos[idx].ultimaRevisionPrecio};
     }
   } else {
-    insumos.push({id:genId('ins'), nombre, unidad, stock, stockMin:min, costo, ultimaRevisionPrecio:HOY(), proveedores});
+    insumos.push({id:genId('ins'), nombre, categoria, unidad, stock, stockMin:min, costo, ultimaRevisionPrecio:HOY(), proveedores});
   }
   guardar();
   cerrarModal('modalInsumo');
@@ -2179,8 +2195,20 @@ function guardarInsumo(){
         if(sel) sel.value=newIns.id;
       },50);
     } else if(ctx.type==='nota'){
+      // Capturar selecciones actuales antes de reconstruir la tabla
+      const prevSels={};
+      notaItemsParsed.forEach((_,i)=>{
+        const s=document.getElementById('notaInsumo_'+i);
+        if(s && s.value) prevSels[i]=s.value;
+      });
       renderNotaConfirm();
       setTimeout(()=>{
+        // Restaurar selecciones previas
+        Object.entries(prevSels).forEach(([i,v])=>{
+          const s=document.getElementById('notaInsumo_'+i);
+          if(s) s.value=v;
+        });
+        // Seleccionar el insumo recién creado en la fila correspondiente
         const sel=document.getElementById('notaInsumo_'+ctx.idx);
         if(sel) sel.value=newIns.id;
       },50);
@@ -2888,8 +2916,21 @@ function renderNotaConfirm(){
     const insumoMatch = item.insumoMapeado
       ? insumos.find(ins=>ins.nombre.toLowerCase()===item.insumoMapeado.toLowerCase())
       : null;
-    const selectOpts = insumos.map(ins=>
-      `<option value="${ins.id}" ${insumoMatch?.id===ins.id?'selected':''}>${ins.nombre} (${ins.unidad})</option>`
+    const insumosSorted = [...insumos].sort((a,b)=>{
+      const ca=(a.categoria||'Otro'), cb=(b.categoria||'Otro');
+      return ca!==cb ? ca.localeCompare(cb,'es') : a.nombre.localeCompare(b.nombre,'es');
+    });
+    // Agrupar por categoría en el select
+    const catGroups={};
+    insumosSorted.forEach(ins=>{
+      const c=ins.categoria||'Otro';
+      if(!catGroups[c]) catGroups[c]=[];
+      catGroups[c].push(ins);
+    });
+    const selectOpts = Object.entries(catGroups).map(([cat,list])=>
+      `<optgroup label="${cat}">${list.map(ins=>
+        `<option value="${ins.id}" ${insumoMatch?.id===ins.id?'selected':''}>${ins.nombre} (${ins.unidad})</option>`
+      ).join('')}</optgroup>`
     ).join('');
     return `<tr>
       <td>${item.descripcion}${insumoMatch
