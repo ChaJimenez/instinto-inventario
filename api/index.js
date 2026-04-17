@@ -462,11 +462,16 @@ Nuestro catálogo de insumos es: ${catalogo}
 Extrae todos los productos, cantidades y precios. Para cada producto, mapea al insumo más parecido del catálogo si existe.
 Si aparece precio unitario o precio total (y puedes deducir el unitario), extráelo. Si no aparece precio, pon null.
 
-IMPORTANTE — unidades:
-- Usa siempre la unidad COMERCIAL/PRÁCTICA del producto, NO la clave SAT (ignora códigos como K62, H87, XBX, etc.).
-- Si ves una columna "Unidad SAT" y otra "Unidad", usa la columna "Unidad" (la comercial).
-- Ejemplos de mapeo: CUB → cubeta, KG → kg, PZA → pza, LT → litro, CAJA → caja, BOLSA → bolsa, ROLLO → rollo.
-- Si la unidad dice "CUB 4.3 L" o similar, extrae solo "cubeta" como unidad y usa la cantidad numérica del campo Cantidad.
+IMPORTANTE — unidades y conversión a unidad base:
+- Ignora claves SAT (K62, H87, XBX, etc.). Usa solo la unidad comercial/práctica.
+- Si ves una columna "Unidad SAT" y otra "Unidad", usa la columna "Unidad".
+- CONVIERTE envases a su unidad base cuando la capacidad está explícita en la nota:
+  · "1 CUB 4.3 L"  → cantidad: 4.3,  unidad: "litro"   (1 cubeta × 4.3 L)
+  · "2 CUB 4.3 L"  → cantidad: 8.6,  unidad: "litro"
+  · "1 CAJA 12 PZA"→ cantidad: 12,   unidad: "pza"
+  · "3 CAJA 12 PZA"→ cantidad: 36,   unidad: "pza"
+  · Si el envase NO trae capacidad (solo dice "CUB" sin número), usa "cubeta" como unidad.
+- Otros mapeos directos: KG→kg, G→g, LT/L→litro, ML→ml, PZA→pza, BOLSA→bolsa, ROLLO→rollo.
 
 Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
 {
