@@ -455,12 +455,18 @@ app.post('/api/leer-nota', async (req, res) => {
             },
             {
               type: 'text',
-              text: `Eres un asistente de inventario para el restaurante INSTINTO. Analiza esta nota de entrega o remisión de proveedor.
+              text: `Eres un asistente de inventario para el restaurante INSTINTO. Analiza esta nota de entrega, remisión o CFDI de proveedor.
 
 Nuestro catálogo de insumos es: ${catalogo}
 
-Extrae todos los productos, cantidades y precios que aparecen en la nota. Para cada producto, mapea al insumo más parecido del catálogo si existe.
+Extrae todos los productos, cantidades y precios. Para cada producto, mapea al insumo más parecido del catálogo si existe.
 Si aparece precio unitario o precio total (y puedes deducir el unitario), extráelo. Si no aparece precio, pon null.
+
+IMPORTANTE — unidades:
+- Usa siempre la unidad COMERCIAL/PRÁCTICA del producto, NO la clave SAT (ignora códigos como K62, H87, XBX, etc.).
+- Si ves una columna "Unidad SAT" y otra "Unidad", usa la columna "Unidad" (la comercial).
+- Ejemplos de mapeo: CUB → cubeta, KG → kg, PZA → pza, LT → litro, CAJA → caja, BOLSA → bolsa, ROLLO → rollo.
+- Si la unidad dice "CUB 4.3 L" o similar, extrae solo "cubeta" como unidad y usa la cantidad numérica del campo Cantidad.
 
 Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
 {
@@ -470,7 +476,7 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
       "descripcion": "nombre como aparece en la nota",
       "insumoMapeado": "nombre EXACTO del insumo de nuestro catálogo, o null si no hay match",
       "cantidad": 0,
-      "unidad": "kg/g/pza/litro/etc",
+      "unidad": "cubeta/kg/g/pza/litro/caja/bolsa/rollo/etc",
       "precioUnitario": 0
     }
   ]

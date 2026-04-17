@@ -552,8 +552,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
         <option value="rebanada">rebanada</option>
         <option value="kg">kg (kilogramos)</option>
         <option value="litro">litro</option>
+        <option value="cubeta">cubeta</option>
         <option value="caja">caja</option>
         <option value="bolsa">bolsa</option>
+        <option value="rollo">rollo</option>
         <option value="otro">otro</option>
       </select>
     </div>
@@ -2112,16 +2114,21 @@ function abrirModalInsumo(id){
 
 // Mapear unidad del ticket al valor del <select id="insumoUnidad">
 function _mapUnidad(u=''){
-  const s = u.toLowerCase().trim();
+  // Quitar claves SAT tipo "K62 - Litro por litro" → tomar solo la parte después del " - "
+  let raw = u;
+  if(raw.includes(' - ')) raw = raw.split(' - ').pop();
+  const s = raw.toLowerCase().trim();
   if(['kg','kilo','kilos','kilogramo','kilogramos'].includes(s)) return 'kg';
   if(['g','gr','gramo','gramos','grs'].includes(s)) return 'g';
   if(['lt','lts','litro','litros','l'].includes(s)) return 'litro';
   if(['ml','mililitro','mililitros'].includes(s)) return 'ml';
-  if(['pza','pzas','pieza','piezas','pz','unidad','unidades'].includes(s)) return 'pza';
+  if(['pza','pzas','pieza','piezas','pz','unidad','unidades','und'].includes(s)) return 'pza';
+  if(['cub','cubeta','cubetas'].includes(s) || s.startsWith('cub ')) return 'cubeta';
   if(['caja','cajas'].includes(s)) return 'caja';
   if(['bolsa','bolsas'].includes(s)) return 'bolsa';
   if(['rebanada','rebanadas'].includes(s)) return 'rebanada';
-  return 'g';
+  if(['rollo','rollos'].includes(s)) return 'rollo';
+  return 'pza'; // default: pieza (más seguro que gramos para unidades desconocidas)
 }
 
 function abrirModalInsumoRapido(nombre, unidad, ctx){
