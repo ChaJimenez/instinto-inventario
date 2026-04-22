@@ -555,7 +555,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <table class="mov-table">
         <thead><tr>
           <th>Hora</th><th>Tipo</th><th>Insumo</th>
-          <th style="text-align:right">Cantidad</th><th>Concepto / Folio</th><th>Responsable</th>
+          <th style="text-align:right">Cantidad</th><th>Concepto / Folio</th><th>Proveedor / Responsable</th>
         </tr></thead>
         <tbody id="movTbody"></tbody>
       </table>
@@ -683,7 +683,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
       <select id="movInsumo"></select>
     </div>
     <div class="form-row"><label>Cantidad</label><input type="number" id="movCantidad" placeholder="0" min="0" step="any"></div>
-    <div class="form-row"><label>Responsable</label><input type="text" id="movResponsable" placeholder="Tony"></div>
+    <div class="form-row" id="movProveedorRow" style="display:none;"><label>Proveedor</label><input type="text" id="movProveedor" placeholder="Nombre del proveedor" list="proveedoresList"></div>
+    <div class="form-row"><label>Responsable</label><input type="text" id="movResponsable" placeholder="Quién registra (Tony)"></div>
     <div class="form-row"><label>Concepto</label><input type="text" id="movConcepto" placeholder="Compra semanal proveedor X"></div>
     <div class="form-row">
       <label>Ref. OC</label>
@@ -2658,6 +2659,7 @@ function renderMovimientos(){
     if(!dayMap[m.fecha].has(tKey)){
       dayMap[m.fecha].set(tKey, {
         tipo: m.tipo, hora: m.hora||'',
+        proveedor: m.proveedor||'',
         responsable: m.responsable||'',
         concepto: m.concepto||'',
         referencia: m.referencia||'',
@@ -2696,8 +2698,8 @@ function renderMovimientos(){
         html += `<tr class="mov-ticket-hdr">
           <td class="mov-ticket-hora">${ticket.hora}</td>
           <td><span class="tipo-badge tipo-${ticket.tipo}">${ticket.tipo}</span></td>
-          <td colspan="2" style="font-weight:600;color:#222;">${ticket.responsable}</td>
-          <td colspan="2" style="font-size:12px;color:#888;">${ticket.concepto} ${refTag}</td>
+          <td colspan="2" style="font-weight:600;color:#222;">${ticket.proveedor||ticket.responsable}</td>
+          <td colspan="2" style="font-size:12px;color:#888;">${ticket.concepto} ${refTag}${ticket.proveedor&&ticket.responsable?` <span style="color:#aaa;margin-left:4px;">· ${ticket.responsable}</span>`:''}</td>
         </tr>`;
         ticket.items.forEach(m => {
           html += `<tr class="mov-ticket-item">
@@ -2715,7 +2717,11 @@ function renderMovimientos(){
           <td><span onclick="abrirDetalleInsumo('${m.nombre.replace(/'/g,"\\'")}');event.stopPropagation();" style="cursor:pointer;color:#0D2A5E;text-decoration:underline dotted #b0c4f5;">${m.nombre}</span></td>
           <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
           <td style="font-size:12px;color:#666;">${m.concepto||''} ${m.referencia?`<span class="mov-folio-tag">${m.referencia}</span>`:''}</td>
-          <td style="font-size:12px;color:#666;">${m.responsable||''}</td>
+          <td style="font-size:12px;">
+            ${m.proveedor?`<div style="color:#0D2A5E;font-weight:600;">${m.proveedor}</div>`:''}
+            ${m.responsable&&m.responsable!=='—'?`<div style="color:#888;${m.proveedor?'font-size:11px;':''};">${m.responsable}</div>`:''}
+            ${!m.proveedor&&(!m.responsable||m.responsable==='—')?`<span style="color:#ccc;">—</span>`:''}
+          </td>
         </tr>`;
       }
     });
@@ -2896,8 +2902,13 @@ function abrirModalMovimiento(preInsumoId, preTipo){
   refSel.innerHTML = '<option value="">Sin orden asociada</option>' +
     ordenes.filter(o=>o.estado!=='recibida').map(o=>`<option value="${o.folio}">${o.folio} — ${o.proveedor}</option>`).join('');
   document.getElementById('movCantidad').value='';
+  document.getElementById('movProveedor').value='';
   document.getElementById('movResponsable').value='';
   document.getElementById('movConcepto').value='';
+  const tipoSel = document.getElementById('movTipo');
+  const toggleProv = ()=>{ document.getElementById('movProveedorRow').style.display = tipoSel.value==='ENTRADA'?'':'none'; };
+  tipoSel.onchange = toggleProv;
+  toggleProv();
   abrirModal('modalMovimiento');
 }
 
@@ -2905,6 +2916,7 @@ function guardarMovimiento(){
   const tipo       = document.getElementById('movTipo').value;
   const insumoId   = document.getElementById('movInsumo').value;
   const cantidad   = parseFloat(document.getElementById('movCantidad').value);
+  const proveedor  = document.getElementById('movProveedor').value.trim();
   const responsable= document.getElementById('movResponsable').value.trim();
   const concepto   = document.getElementById('movConcepto').value.trim();
   const ordenRef   = document.getElementById('movOrdenRef').value;
@@ -2925,6 +2937,7 @@ function guardarMovimiento(){
     hora: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
     tipo, insumoId, nombre:ins.nombre,
     cantidad: delta, unidad:ins.unidad,
+    proveedor: proveedor||'',
     responsable: responsable||'—', concepto: concepto||tipo,
     referencia: ordenRef||'',
     stockAntes, stockDespues: ins.stock,
@@ -3658,7 +3671,8 @@ async function confirmarEntradaNota(){
       tipo: 'ENTRADA',
       insumoId, nombre: ins.nombre,
       cantidad, unidad: ins.unidad,
-      responsable: proveedor,
+      proveedor,
+      responsable: '',
       concepto,
       referencia: folio,
       stockAntes, stockDespues: ins.stock,
@@ -4606,7 +4620,8 @@ function confirmarCompraSinDoc(){
       tipo: 'ENTRADA',
       insumoId: ins.id, nombre: ins.nombre,
       cantidad: it.cantidad, unidad: ins.unidad,
-      responsable: proveedor,
+      proveedor,
+      responsable: '',
       concepto: `${folio}${notas?' — '+notas:''}`,
       referencia: folio,
       stockAntes, stockDespues: ins.stock,
