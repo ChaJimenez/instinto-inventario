@@ -917,14 +917,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 </div>
 
 <!-- Modal: Detalle de Insumo -->
-<div class="modal-overlay" id="modalDetalleInsumo">
+<div class="modal-overlay" id="modalDetalleInsumo" onclick="if(event.target===this)cerrarModal('modalDetalleInsumo')">
   <div class="modal modal-lg" style="max-height:88vh;overflow-y:auto;">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:10px;">
-      <div>
-        <h2 id="dinNombre" style="font-size:17px;margin-bottom:3px;">—</h2>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+          <h2 id="dinNombre" style="font-size:17px;margin:0;">—</h2>
+          <span id="dinStatusBadge"></span>
+        </div>
         <div id="dinMeta" style="font-size:12px;color:#aaa;"></div>
       </div>
-      <span id="dinStatusBadge"></span>
+      <button onclick="cerrarModal('modalDetalleInsumo')" style="border:none;background:none;font-size:20px;color:#aaa;cursor:pointer;line-height:1;padding:0 0 0 8px;flex-shrink:0;" title="Cerrar">✕</button>
     </div>
     <div id="dinKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"></div>
     <div id="dinRotacion" style="margin-bottom:10px;"></div>
