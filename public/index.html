@@ -162,6 +162,19 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .dash-bar-lbl{font-size:9px;color:#999;text-align:center;margin-top:3px;line-height:1.3;white-space:nowrap;}
 .dash-legend{display:flex;align-items:center;gap:4px;font-size:11px;color:#888;flex-wrap:wrap;}
 .dash-leg-dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:2px;}
+/* ── PROVEEDORES: desplegable ── */
+.dprov-card{border:1px solid #eee;border-radius:9px;overflow:hidden;margin-bottom:7px;background:#fff;}
+.dprov-row{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;user-select:none;transition:background 0.12s;}
+.dprov-row:hover{background:#f5f7ff;}
+.dprov-chevron{font-size:11px;color:#bbb;transition:transform 0.2s;flex-shrink:0;margin-left:4px;}
+.dprov-hist{display:none;border-top:1px solid #f0f0f0;background:#fafbff;}
+.dprov-hist.open{display:block;}
+.dprov-hist table{width:100%;border-collapse:collapse;}
+.dprov-hist th{padding:6px 10px;font-size:10px;color:#aaa;text-align:left;border-bottom:1px solid #f0f0f0;font-weight:700;letter-spacing:0.04em;}
+.dprov-hist td{padding:7px 10px;font-size:12px;border-bottom:1px solid #f7f7f7;vertical-align:top;}
+.dprov-hist tr:last-child td{border-bottom:none;}
+.dprov-hist-prod{color:#333;}
+.dprov-hist-folio{font-size:10px;background:#f0f4ff;color:#0D2A5E;border-radius:4px;padding:1px 6px;font-weight:600;white-space:nowrap;}
 /* ── RECETARIO PDF REVIEW ── */
 .rdiff-table{width:100%;border-collapse:collapse;font-size:13px;}
 .rdiff-table th{text-align:left;padding:7px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
@@ -2213,28 +2226,70 @@ function _buildProveedores(entradas){
   const map = {};
   entradas.forEach(m=>{
     const p=m.responsable||'—';
-    if(!map[p]) map[p]={count:0,productos:new Set(),fechas:[]};
-    map[p].count++; map[p].productos.add(m.nombre); map[p].fechas.push(m.fecha);
+    if(!map[p]) map[p]={count:0,productos:new Set(),fechas:[],movs:[]};
+    map[p].count++; map[p].productos.add(m.nombre); map[p].fechas.push(m.fecha); map[p].movs.push(m);
   });
   const sorted=Object.entries(map).sort((a,b)=>b[1].count-a[1].count).slice(0,8);
   if(!sorted.length) return '<div style="color:#aaa;font-size:13px;padding:12px 0;">Sin entradas en el período.</div>';
   const mx=sorted[0][1].count;
-  return `<div style="display:grid;gap:10px;">`+sorted.map(([nombre,d])=>{
+
+  return sorted.map(([nombre,d], idx)=>{
     const ini=nombre.replace(/^—$/,'?').charAt(0).toUpperCase();
-    const ult=d.fechas.sort().reverse()[0];
+    const ult=[...d.fechas].sort().reverse()[0];
     const [,mo,dd]=ult.split('-').map(Number);
-    return `<div style="display:flex;align-items:center;gap:10px;">
-      <div style="width:32px;height:32px;border-radius:50%;background:#0D2A5E;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ini}</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
-        <div style="font-size:11px;color:#aaa;">${d.productos.size} insumo${d.productos.size!==1?'s':''} · última: ${parseInt(dd)} ${MESES_C[mo-1]}</div>
+
+    // Agrupar movimientos por ticket (folio o fecha+hora+responsable)
+    const tMap={};
+    d.movs.forEach(m=>{
+      const key=m.referencia||`${m.fecha}_${m.hora||''}_${m.responsable||''}`;
+      if(!tMap[key]) tMap[key]={fecha:m.fecha,folio:m.referencia||'',concepto:m.concepto||'',items:[]};
+      tMap[key].items.push(m);
+    });
+    const tickets=Object.values(tMap).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+    const rows=tickets.map(t=>{
+      const [,tmo,tdd]=t.fecha.split('-').map(Number);
+      const prods=t.items.map(i=>`<span style="display:inline-block;margin-right:6px;">${i.nombre} <strong style="color:#3b6d11;">+${fmtNum(i.cantidad)} ${i.unidad}</strong></span>`).join('');
+      const folioTag=t.folio?`<span class="dprov-hist-folio">${t.folio}</span>`:'';
+      return `<tr>
+        <td style="white-space:nowrap;color:#555;">${parseInt(tdd)} ${MESES_C[tmo-1]}</td>
+        <td>${folioTag}<span style="font-size:11px;color:#aaa;margin-left:${t.folio?4:0}px;">${t.folio?'':t.concepto||'—'}</span></td>
+        <td class="dprov-hist-prod">${prods}</td>
+      </tr>`;
+    }).join('');
+
+    const hid=`provHist${idx}`;
+    return `<div class="dprov-card">
+      <div class="dprov-row" onclick="toggleProvHist('${hid}')">
+        <div style="width:32px;height:32px;border-radius:50%;background:#0D2A5E;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ini}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
+          <div style="font-size:11px;color:#aaa;">${d.productos.size} insumo${d.productos.size!==1?'s':''} · última: ${parseInt(dd)} ${MESES_C[mo-1]}</div>
+        </div>
+        <div style="width:70px;height:5px;background:#f0f0f0;border-radius:3px;flex-shrink:0;align-self:center;">
+          <div style="height:5px;background:#3b6d11;border-radius:3px;width:${Math.round(d.count/mx*100)}%;"></div>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#3b6d11;min-width:18px;text-align:right;">${d.count}</div>
+        <span class="dprov-chevron" id="chev-${hid}">▼</span>
       </div>
-      <div style="width:80px;height:5px;background:#f0f0f0;border-radius:3px;flex-shrink:0;">
-        <div style="height:5px;background:#3b6d11;border-radius:3px;width:${Math.round(d.count/mx*100)}%;"></div>
+      <div class="dprov-hist" id="${hid}">
+        <table>
+          <thead><tr>
+            <th>Fecha</th><th>Folio / Concepto</th><th>Productos</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
       </div>
-      <div style="font-size:13px;font-weight:700;color:#3b6d11;min-width:18px;text-align:right;">${d.count}</div>
     </div>`;
-  }).join('')+`</div>`;
+  }).join('');
+}
+
+function toggleProvHist(id){
+  const el=document.getElementById(id);
+  const chv=document.getElementById('chev-'+id);
+  if(!el) return;
+  const open=el.classList.toggle('open');
+  if(chv) chv.style.transform=open?'rotate(180deg)':'';
 }
 
 // RENDER: MOVIMIENTOS
