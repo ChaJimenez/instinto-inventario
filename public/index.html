@@ -2602,6 +2602,13 @@ function limpiarFiltrosMov(){
   renderMovimientos();
 }
 
+function fmtFechaCorta(f){
+  if(!f) return '';
+  const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const [,mo,dd]=f.split('-').map(Number);
+  return `${dd} ${MESES[mo-1]}`;
+}
+
 function renderMovimientos(){
   const busq  = (document.getElementById('movFiltroInsumo').value||'').toLowerCase().trim();
   const tipo  = document.getElementById('movFiltroTipo').value;
@@ -2670,6 +2677,7 @@ function renderMovimientos(){
         responsable: m.responsable||'',
         concepto: m.concepto||'',
         referencia: m.referencia||'',
+        fechaCaptura: m.fechaCaptura||'',
         items: []
       });
     }
@@ -2706,7 +2714,7 @@ function renderMovimientos(){
           <td class="mov-ticket-hora">${ticket.hora}</td>
           <td><span class="tipo-badge tipo-${ticket.tipo}">${ticket.tipo}</span></td>
           <td colspan="2" style="font-weight:600;color:#222;">${ticket.proveedor||ticket.responsable}</td>
-          <td colspan="2" style="font-size:12px;color:#888;">${ticket.concepto} ${refTag}${ticket.proveedor&&ticket.responsable?` <span style="color:#aaa;margin-left:4px;">· ${ticket.responsable}</span>`:''}</td>
+          <td colspan="2" style="font-size:12px;color:#888;">${ticket.concepto} ${refTag}${ticket.proveedor&&ticket.responsable?` <span style="color:#aaa;margin-left:4px;">· ${ticket.responsable}</span>`:''}${ticket.fechaCaptura&&ticket.fechaCaptura!==fechaDia?` <span style="display:inline-block;margin-left:6px;font-size:10px;background:#fff3e0;color:#b06800;border:1px solid #f5c686;border-radius:4px;padding:1px 5px;">cap. ${fmtFechaCorta(ticket.fechaCaptura)}</span>`:''}</td>
         </tr>`;
         ticket.items.forEach(m => {
           html += `<tr class="mov-ticket-item">
@@ -2718,12 +2726,14 @@ function renderMovimientos(){
         });
       } else {
         const m = ticket.items[0];
+        const capBadge = m.fechaCaptura&&m.fechaCaptura!==m.fecha
+          ? `<span style="display:inline-block;margin-left:6px;font-size:10px;background:#fff3e0;color:#b06800;border:1px solid #f5c686;border-radius:4px;padding:1px 5px;">cap. ${fmtFechaCorta(m.fechaCaptura)}</span>` : '';
         html += `<tr>
           <td class="mov-ticket-hora">${m.hora||''}</td>
           <td><span class="tipo-badge tipo-${m.tipo}">${m.tipo}</span></td>
           <td><span onclick="abrirDetalleInsumo('${m.nombre.replace(/'/g,"\\'")}');event.stopPropagation();" style="cursor:pointer;color:#0D2A5E;text-decoration:underline dotted #b0c4f5;">${m.nombre}</span></td>
           <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
-          <td style="font-size:12px;color:#666;">${m.concepto||''} ${m.referencia?`<span class="mov-folio-tag">${m.referencia}</span>`:''}</td>
+          <td style="font-size:12px;color:#666;">${m.concepto||''} ${m.referencia?`<span class="mov-folio-tag">${m.referencia}</span>`:''}${capBadge}</td>
           <td style="font-size:12px;">
             ${m.proveedor?`<div style="color:#0D2A5E;font-weight:600;">${m.proveedor}</div>`:''}
             ${m.responsable&&m.responsable!=='—'?`<div style="color:#888;${m.proveedor?'font-size:11px;':''};">${m.responsable}</div>`:''}
@@ -2947,9 +2957,11 @@ function guardarMovimiento(){
   ins.stock = Math.max(0, ins.stock + delta);
 
   const fechaMov = document.getElementById('movFechaEntrada').value || HOY();
+  const hoyCaptura = HOY();
   movimientos.push({
     id: genId('mov'),
     fecha: fechaMov,
+    fechaCaptura: hoyCaptura,
     hora: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
     tipo, insumoId, nombre:ins.nombre,
     cantidad: delta, unidad:ins.unidad,
@@ -3683,7 +3695,7 @@ async function confirmarEntradaNota(){
     items.push({ insumoId, nombre:ins.nombre, unidad:ins.unidad, cantidad, precioUnit:precio, subtotal:cantidad*precio });
     movimientos.push({
       id: genId('mov'),
-      fecha: hoy, hora,
+      fecha: hoy, fechaCaptura: hoy, hora,
       tipo: 'ENTRADA',
       insumoId, nombre: ins.nombre,
       cantidad, unidad: ins.unidad,
@@ -4632,7 +4644,7 @@ function confirmarCompraSinDoc(){
     }
     movimientos.push({
       id: genId('mov'),
-      fecha, hora,
+      fecha, fechaCaptura: HOY(), hora,
       tipo: 'ENTRADA',
       insumoId: ins.id, nombre: ins.nombre,
       cantidad: it.cantidad, unidad: ins.unidad,
