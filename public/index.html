@@ -678,11 +678,18 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
         <option value="AJUSTE">Ajuste (corrección de inventario)</option>
       </select>
     </div>
+    <div class="form-row"><label>Fecha</label><input type="date" id="movFechaEntrada"></div>
     <div class="form-row">
       <label>Insumo</label>
-      <select id="movInsumo"></select>
+      <select id="movInsumo" onchange="actualizarUnidadMov()"></select>
     </div>
-    <div class="form-row"><label>Cantidad</label><input type="number" id="movCantidad" placeholder="0" min="0" step="any"></div>
+    <div class="form-row">
+      <label>Cantidad</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="movCantidad" placeholder="0" min="0" step="any" style="flex:1;">
+        <span id="movUnidadLabel" style="font-size:13px;color:#555;min-width:28px;font-weight:600;"></span>
+      </div>
+    </div>
     <div class="form-row" id="movProveedorRow" style="display:none;"><label>Proveedor</label><input type="text" id="movProveedor" placeholder="Nombre del proveedor" list="proveedoresList"></div>
     <div class="form-row"><label>Responsable</label><input type="text" id="movResponsable" placeholder="Quién registra (Tony)"></div>
     <div class="form-row"><label>Concepto</label><input type="text" id="movConcepto" placeholder="Compra semanal proveedor X"></div>
@@ -2901,6 +2908,7 @@ function abrirModalMovimiento(preInsumoId, preTipo){
   const refSel = document.getElementById('movOrdenRef');
   refSel.innerHTML = '<option value="">Sin orden asociada</option>' +
     ordenes.filter(o=>o.estado!=='recibida').map(o=>`<option value="${o.folio}">${o.folio} — ${o.proveedor}</option>`).join('');
+  document.getElementById('movFechaEntrada').value = HOY();
   document.getElementById('movCantidad').value='';
   document.getElementById('movProveedor').value='';
   document.getElementById('movResponsable').value='';
@@ -2909,7 +2917,14 @@ function abrirModalMovimiento(preInsumoId, preTipo){
   const toggleProv = ()=>{ document.getElementById('movProveedorRow').style.display = tipoSel.value==='ENTRADA'?'':'none'; };
   tipoSel.onchange = toggleProv;
   toggleProv();
+  actualizarUnidadMov();
   abrirModal('modalMovimiento');
+}
+
+function actualizarUnidadMov(){
+  const sel = document.getElementById('movInsumo');
+  const ins = insumos.find(i=>i.id===sel.value);
+  document.getElementById('movUnidadLabel').textContent = ins ? ins.unidad : '';
 }
 
 function guardarMovimiento(){
@@ -2931,9 +2946,10 @@ function guardarMovimiento(){
   const stockAntes = ins.stock;
   ins.stock = Math.max(0, ins.stock + delta);
 
+  const fechaMov = document.getElementById('movFechaEntrada').value || HOY();
   movimientos.push({
     id: genId('mov'),
-    fecha: HOY(),
+    fecha: fechaMov,
     hora: new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}),
     tipo, insumoId, nombre:ins.nombre,
     cantidad: delta, unidad:ins.unidad,
