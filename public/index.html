@@ -126,6 +126,42 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .tipo-AJUSTE{background:#f5f5f5;color:#555;}
 .tipo-CORTE{background:#fff8ed;color:#b06800;}
 .tipo-RESET_RECETARIO{background:#e8f7f0;color:#1b6b47;}
+/* ── MOVIMIENTOS: agrupado por día / ticket ── */
+.mov-day-row td{background:#f3f5fb;padding:10px 10px 6px;border-top:2px solid #dde2f0;border-bottom:1px solid #dde2f0;}
+.mov-day-fecha{font-weight:700;font-size:13px;color:#0D2A5E;}
+.mov-day-meta{font-size:11px;color:#888;margin-left:10px;}
+.mov-ticket-hdr td{background:#fafbff;padding:8px 10px 5px;border-bottom:none;font-size:13px;}
+.mov-ticket-hora{font-size:11px;color:#aaa;white-space:nowrap;}
+.mov-ticket-item td{padding:3px 10px 5px;border-bottom:1px solid #f5f5f5;}
+.mov-item-nombre{font-size:13px;color:#555;padding-left:28px!important;}
+.mov-folio-tag{font-size:11px;background:#f0f4ff;color:#0D2A5E;border:1px solid #c5d3f5;border-radius:4px;padding:1px 7px;margin-left:5px;font-weight:600;}
+/* ── MOVIMIENTOS: vista toggle ── */
+.mov-view-toggle{display:flex;gap:3px;background:#f0f0f0;border-radius:8px;padding:3px;}
+.mov-view-btn{padding:6px 14px;border-radius:6px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:#888;background:none;transition:all 0.15s;}
+.mov-view-btn.active{background:#fff;color:#0D2A5E;box-shadow:0 1px 3px rgba(0,0,0,0.12);}
+/* ── MOVIMIENTOS: dashboard ── */
+.dash-period-row{display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;}
+.dash-period-btn{padding:5px 16px;border-radius:20px;border:1px solid #ddd;font-size:12px;font-weight:600;cursor:pointer;color:#888;background:#fff;transition:all 0.15s;}
+.dash-period-btn.active{background:#0D2A5E;color:#fff;border-color:#0D2A5E;}
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:560px){.dash-kpis{grid-template-columns:repeat(2,1fr);}}
+.dkpi{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:13px 14px;text-align:center;}
+.dkpi-val{font-size:22px;font-weight:700;line-height:1.1;color:#0D2A5E;}
+.dkpi-val.green{color:#3b6d11;}.dkpi-val.red{color:#e24b4a;}.dkpi-val.amber{color:#b06800;}
+.dkpi-lbl{font-size:11px;color:#888;margin-top:3px;}
+.dash-card{background:#fff;border:1px solid #e8e8e8;border-radius:10px;padding:14px 16px;margin-bottom:12px;}
+.dash-card-title{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px;}
+.dash-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:560px){.dash-cols{grid-template-columns:1fr;}}
+.dash-bars-outer{overflow-x:auto;margin-bottom:6px;}
+.dash-bars-wrap{display:flex;align-items:flex-end;gap:2px;height:90px;min-width:max-content;}
+.dash-bar-col{display:flex;flex-direction:column;align-items:center;width:28px;flex-shrink:0;}
+.dash-bar-pair{display:flex;align-items:flex-end;gap:2px;height:72px;width:100%;}
+.dash-bar{flex:1;border-radius:3px 3px 0 0;transition:height 0.3s;}
+.dash-bar-empty{flex:1;}
+.dash-bar-lbl{font-size:9px;color:#999;text-align:center;margin-top:3px;line-height:1.3;white-space:nowrap;}
+.dash-legend{display:flex;align-items:center;gap:4px;font-size:11px;color:#888;flex-wrap:wrap;}
+.dash-leg-dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:2px;}
 /* ── RECETARIO PDF REVIEW ── */
 .rdiff-table{width:100%;border-collapse:collapse;font-size:13px;}
 .rdiff-table th{text-align:left;padding:7px 8px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:600;}
@@ -433,43 +469,79 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
      SCREEN: MOVIMIENTOS
 ══════════════════════════════════════════ -->
 <div id="screen-movimientos" class="screen">
-  <div class="sec-header">
-    <span class="sec-title">Historial de Movimientos</span>
+  <div class="sec-header" style="margin-bottom:14px;">
+    <div class="mov-view-toggle">
+      <button class="mov-view-btn active" id="movBtnDash" onclick="setMovVista('dashboard')">📊 Dashboard</button>
+      <button class="mov-view-btn" id="movBtnHist" onclick="setMovVista('historial')">📋 Historial</button>
+    </div>
     <button class="btn btn-outline btn-sm" onclick="abrirModalMovimiento()">+ Manual</button>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-    <input type="text" id="movFiltroInsumo" placeholder="🔍 Buscar insumo..." oninput="renderMovimientos()"
-      style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
-    <select id="movFiltroTipo" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
-      <option value="">Todos los tipos</option>
-      <option value="VENTA">Venta</option>
-      <option value="ENTRADA">Entrada</option>
-      <option value="MERMA">Merma</option>
-      <option value="AJUSTE">Ajuste</option>
-      <option value="CORTE">Corte</option>
-    </select>
-    <select id="movFiltroRango" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
-      <option value="">Todas las fechas</option>
-      <option value="hoy">Hoy</option>
-      <option value="semana">Esta semana</option>
-      <option value="mes">Este mes</option>
-      <option value="fecha">Fecha exacta…</option>
-    </select>
-    <input type="date" id="movFiltroFecha" onchange="renderMovimientos()"
-      style="display:none;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
-    <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosMov()">Limpiar</button>
+
+  <!-- ─── DASHBOARD ─── -->
+  <div id="movDashboard">
+    <div class="dash-period-row">
+      <button class="dash-period-btn active" id="dp7"  onclick="setDashPeriod(7)">7 días</button>
+      <button class="dash-period-btn"        id="dp14" onclick="setDashPeriod(14)">14 días</button>
+      <button class="dash-period-btn"        id="dp30" onclick="setDashPeriod(30)">30 días</button>
+    </div>
+    <div class="dash-kpis">
+      <div class="dkpi"><div class="dkpi-val green" id="dkpiEntradas">—</div><div class="dkpi-lbl">Entradas</div></div>
+      <div class="dkpi"><div class="dkpi-val red"   id="dkpiSalidas">—</div><div class="dkpi-lbl">Salidas/Ventas</div></div>
+      <div class="dkpi"><div class="dkpi-val amber" id="dkpiMerma">—</div><div class="dkpi-lbl">Mermas</div></div>
+      <div class="dkpi"><div class="dkpi-val"       id="dkpiDias">—</div><div class="dkpi-lbl">Días activos</div></div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">Actividad diaria — movimientos registrados</div>
+      <div class="dash-bars-outer"><div class="dash-bars-wrap" id="dashBarsWrap"></div></div>
+      <div class="dash-legend">
+        <span class="dash-leg-dot" style="background:#3b6d11;"></span>Entradas &nbsp;
+        <span class="dash-leg-dot" style="background:#e24b4a;"></span>Salidas/Merma &nbsp;
+        <span class="dash-leg-dot" style="background:#c8c8c8;"></span>Ajustes
+      </div>
+    </div>
+    <div class="dash-cols" style="margin-bottom:12px;">
+      <div class="dash-card" style="margin-bottom:0;"><div class="dash-card-title">Top insumos por actividad</div><div id="dashTopInsumos"></div></div>
+      <div class="dash-card" style="margin-bottom:0;"><div class="dash-card-title">Distribución por tipo</div><div id="dashTipoChart"></div></div>
+    </div>
+    <div class="dash-card"><div class="dash-card-title">Entradas por proveedor</div><div id="dashProveedores"></div></div>
   </div>
-  <div id="movResumen" style="display:none;background:#f0f4ff;border:1px solid #b0c4f5;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#0D2A5E;"></div>
-  <div style="overflow-x:auto;">
-    <table class="mov-table">
-      <thead><tr>
-        <th>Fecha</th><th>Tipo</th><th>Insumo</th>
-        <th style="text-align:right">Cantidad</th><th>Concepto</th><th>Responsable</th>
-      </tr></thead>
-      <tbody id="movTbody"></tbody>
-    </table>
-  </div>
-  <div id="movEmpty" class="empty" style="display:none">Sin movimientos registrados.</div>
+
+  <!-- ─── HISTORIAL ─── -->
+  <div id="movHistorial" style="display:none;">
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <input type="text" id="movFiltroInsumo" placeholder="🔍 Buscar insumo..." oninput="renderMovimientos()"
+        style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+      <select id="movFiltroTipo" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+        <option value="">Todos los tipos</option>
+        <option value="VENTA">Venta</option>
+        <option value="ENTRADA">Entrada</option>
+        <option value="MERMA">Merma</option>
+        <option value="AJUSTE">Ajuste</option>
+        <option value="CORTE">Corte</option>
+      </select>
+      <select id="movFiltroRango" onchange="renderMovimientos()" style="padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+        <option value="">Todas las fechas</option>
+        <option value="hoy">Hoy</option>
+        <option value="semana">Esta semana</option>
+        <option value="mes">Este mes</option>
+        <option value="fecha">Fecha exacta…</option>
+      </select>
+      <input type="date" id="movFiltroFecha" onchange="renderMovimientos()"
+        style="display:none;padding:8px 12px;border:1px solid #ddd;border-radius:7px;font-size:13px;background:#fff;outline:none;">
+      <button class="btn btn-outline btn-sm" onclick="limpiarFiltrosMov()">Limpiar</button>
+    </div>
+    <div id="movResumen" style="display:none;background:#f0f4ff;border:1px solid #b0c4f5;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#0D2A5E;"></div>
+    <div style="overflow-x:auto;">
+      <table class="mov-table">
+        <thead><tr>
+          <th>Hora</th><th>Tipo</th><th>Insumo</th>
+          <th style="text-align:right">Cantidad</th><th>Concepto / Folio</th><th>Responsable</th>
+        </tr></thead>
+        <tbody id="movTbody"></tbody>
+      </table>
+    </div>
+    <div id="movEmpty" class="empty" style="display:none">Sin movimientos registrados.</div>
+  </div><!-- /movHistorial -->
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -1614,7 +1686,7 @@ function switchTab(tab){
   if(tab==='recetario')   renderRecetario();
   if(tab==='ordenes')     renderOrdenes();
   if(tab==='compras')     renderCompras();
-  if(tab==='movimientos') renderMovimientos();
+  if(tab==='movimientos'){ if(movVista==='dashboard') renderMovDashboard(); else renderMovimientos(); }
   if(tab==='config')      renderConfig();
 }
 
@@ -1994,6 +2066,177 @@ function editarOrden(folio){
 }
 
 // ══════════════════════════════════════
+// ══════════════════════════════════════
+// DASHBOARD: MOVIMIENTOS
+// ══════════════════════════════════════
+let dashPeriodDias = 14;
+let movVista = 'dashboard';
+
+function setMovVista(vista){
+  movVista = vista;
+  document.getElementById('movBtnDash').classList.toggle('active', vista==='dashboard');
+  document.getElementById('movBtnHist').classList.toggle('active', vista==='historial');
+  document.getElementById('movDashboard').style.display  = vista==='dashboard' ? '' : 'none';
+  document.getElementById('movHistorial').style.display  = vista==='historial'  ? '' : 'none';
+  if(vista==='dashboard') renderMovDashboard();
+  else renderMovimientos();
+}
+
+function setDashPeriod(dias){
+  dashPeriodDias = dias;
+  [7,14,30].forEach(d => {
+    const b = document.getElementById('dp'+d);
+    if(b) b.classList.toggle('active', d===dias);
+  });
+  renderMovDashboard();
+}
+
+function renderMovDashboard(){
+  const hoy   = HOY();
+  const desde = new Date(Date.now() - dashPeriodDias*86400000).toISOString().slice(0,10);
+  const lista = movimientos.filter(m => m.fecha >= desde && m.fecha <= hoy);
+
+  const entradas = lista.filter(m => m.tipo==='ENTRADA');
+  const salidas  = lista.filter(m => ['VENTA','MERMA'].includes(m.tipo));
+  const mermas   = lista.filter(m => m.tipo==='MERMA');
+  const dias     = new Set(lista.map(m => m.fecha)).size;
+
+  document.getElementById('dkpiEntradas').textContent = entradas.length;
+  document.getElementById('dkpiSalidas').textContent  = salidas.length;
+  document.getElementById('dkpiMerma').textContent    = mermas.length;
+  document.getElementById('dkpiDias').textContent     = dias;
+
+  _renderDashBars(lista, desde, hoy);
+  document.getElementById('dashTopInsumos').innerHTML  = _buildTopInsumos(lista);
+  document.getElementById('dashTipoChart').innerHTML   = _buildTipoChart(lista);
+  document.getElementById('dashProveedores').innerHTML = _buildProveedores(entradas);
+}
+
+function _renderDashBars(lista, desde, hoy){
+  const dates = [];
+  let d = new Date(desde + 'T12:00:00');
+  const end = new Date(hoy + 'T12:00:00');
+  while(d <= end){ dates.push(d.toISOString().slice(0,10)); d.setDate(d.getDate()+1); }
+
+  const MESES_C = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const dataByDay = dates.map(f => ({
+    f,
+    ent: lista.filter(m=>m.fecha===f && m.tipo==='ENTRADA').length,
+    sal: lista.filter(m=>m.fecha===f && ['VENTA','MERMA'].includes(m.tipo)).length,
+    adj: lista.filter(m=>m.fecha===f && ['AJUSTE','CORTE'].includes(m.tipo)).length,
+  }));
+
+  const maxVal = Math.max(1, ...dataByDay.map(d=>Math.max(d.ent, d.sal, d.adj)));
+
+  const html = dataByDay.map(d => {
+    const [,mo,dd] = d.f.split('-').map(Number);
+    const hEnt = d.ent>0 ? Math.max(8, Math.round(d.ent/maxVal*68)) : 0;
+    const hSal = d.sal>0 ? Math.max(8, Math.round(d.sal/maxVal*68)) : 0;
+    const hAdj = d.adj>0 ? Math.max(8, Math.round(d.adj/maxVal*68)) : 0;
+    const barE = d.ent>0 ? `<div class="dash-bar" style="height:${hEnt}px;background:#3b6d11;" title="${d.ent} entradas"></div>` : '<div class="dash-bar-empty"></div>';
+    const barS = d.sal>0 ? `<div class="dash-bar" style="height:${hSal}px;background:#e24b4a;" title="${d.sal} salidas"></div>` : '<div class="dash-bar-empty"></div>';
+    const barA = d.adj>0 ? `<div class="dash-bar" style="height:${hAdj}px;background:#ccc;" title="${d.adj} ajustes"></div>`   : '<div class="dash-bar-empty"></div>';
+    const hasAny = d.ent||d.sal||d.adj;
+    return `<div class="dash-bar-col">
+      <div class="dash-bar-pair">${barE}${barS}${barA}</div>
+      <div class="dash-bar-lbl ${hasAny?'':'dash-bar-lbl-dim'}">${dd}<br><span style="font-size:8px;color:#bbb;">${MESES_C[mo-1]}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('dashBarsWrap').innerHTML = html;
+}
+
+function _buildTopInsumos(lista){
+  const map = {};
+  lista.forEach(m => {
+    if(!map[m.nombre]) map[m.nombre] = {ent:0, sal:0, total:0};
+    if(m.tipo==='ENTRADA') map[m.nombre].ent++;
+    else if(['VENTA','MERMA'].includes(m.tipo)) map[m.nombre].sal++;
+    map[m.nombre].total++;
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1].total-a[1].total).slice(0,7);
+  if(!sorted.length) return '<div style="color:#aaa;font-size:13px;padding:12px 0;">Sin movimientos.</div>';
+  const mx = sorted[0][1].total;
+  return sorted.map(([nom,d])=>`
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
+        <span style="font-size:12px;color:#222;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:66%;">${nom}</span>
+        <span style="font-size:11px;flex-shrink:0;">${d.ent>0?`<span style="color:#3b6d11;">↑${d.ent}</span> `:''}${d.sal>0?`<span style="color:#e24b4a;">↓${d.sal}</span>`:''}${(!d.ent&&!d.sal)?`<span style="color:#888;">${d.total} mov.</span>`:''}</span>
+      </div>
+      <div style="height:5px;background:#f0f0f0;border-radius:3px;">
+        <div style="height:5px;background:#0D2A5E;border-radius:3px;width:${Math.round(d.total/mx*100)}%;"></div>
+      </div>
+    </div>`).join('');
+}
+
+function _buildTipoChart(lista){
+  const CFG = {
+    ENTRADA:{label:'Entrada', color:'#3b6d11'},
+    VENTA:  {label:'Venta',   color:'#0D2A5E'},
+    MERMA:  {label:'Merma',   color:'#e24b4a'},
+    AJUSTE: {label:'Ajuste',  color:'#888'},
+    CORTE:  {label:'Corte',   color:'#b06800'},
+  };
+  const counts = {};
+  lista.forEach(m=>{ counts[m.tipo]=(counts[m.tipo]||0)+1; });
+  const total = lista.length || 1;
+  const items = Object.entries(CFG)
+    .map(([tipo,cfg])=>({tipo,cfg,count:counts[tipo]||0}))
+    .filter(x=>x.count>0)
+    .sort((a,b)=>b.count-a.count);
+  if(!items.length) return '<div style="color:#aaa;font-size:13px;padding:12px 0;">Sin movimientos.</div>';
+
+  // Donut SVG
+  const R=34,CX=42,CY=42,SW=13,circ=2*Math.PI*R;
+  let off=0;
+  const arcs = items.map(({cfg,count})=>{
+    const pct=count/total;
+    const arc=`<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${cfg.color}" stroke-width="${SW}" stroke-dasharray="${(pct*circ).toFixed(2)} ${circ.toFixed(2)}" stroke-dashoffset="${(-off*circ).toFixed(2)}" transform="rotate(-90 ${CX} ${CY})" opacity="0.85"/>`;
+    off+=pct; return arc;
+  });
+  const donut=`<svg width="84" height="84" style="flex-shrink:0;">
+    <circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#f0f0f0" stroke-width="${SW}"/>
+    ${arcs.join('')}
+    <text x="${CX}" y="${CY+4}" text-anchor="middle" font-size="12" font-weight="700" fill="#1a1a1a">${total}</text>
+  </svg>`;
+  const legend = items.map(({cfg,count})=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+      <div style="width:8px;height:8px;border-radius:50%;background:${cfg.color};flex-shrink:0;"></div>
+      <span style="font-size:12px;color:#444;flex:1;">${cfg.label}</span>
+      <span style="font-size:12px;font-weight:600;color:#222;">${count}</span>
+      <span style="font-size:11px;color:#aaa;min-width:28px;text-align:right;">${Math.round(count/total*100)}%</span>
+    </div>`).join('');
+  return `<div style="display:flex;align-items:center;gap:14px;">${donut}<div style="flex:1;">${legend}</div></div>`;
+}
+
+function _buildProveedores(entradas){
+  const MESES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const map = {};
+  entradas.forEach(m=>{
+    const p=m.responsable||'—';
+    if(!map[p]) map[p]={count:0,productos:new Set(),fechas:[]};
+    map[p].count++; map[p].productos.add(m.nombre); map[p].fechas.push(m.fecha);
+  });
+  const sorted=Object.entries(map).sort((a,b)=>b[1].count-a[1].count).slice(0,8);
+  if(!sorted.length) return '<div style="color:#aaa;font-size:13px;padding:12px 0;">Sin entradas en el período.</div>';
+  const mx=sorted[0][1].count;
+  return `<div style="display:grid;gap:10px;">`+sorted.map(([nombre,d])=>{
+    const ini=nombre.replace(/^—$/,'?').charAt(0).toUpperCase();
+    const ult=d.fechas.sort().reverse()[0];
+    const [,mo,dd]=ult.split('-').map(Number);
+    return `<div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:#0D2A5E;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ini}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nombre}</div>
+        <div style="font-size:11px;color:#aaa;">${d.productos.size} insumo${d.productos.size!==1?'s':''} · última: ${parseInt(dd)} ${MESES_C[mo-1]}</div>
+      </div>
+      <div style="width:80px;height:5px;background:#f0f0f0;border-radius:3px;flex-shrink:0;">
+        <div style="height:5px;background:#3b6d11;border-radius:3px;width:${Math.round(d.count/mx*100)}%;"></div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#3b6d11;min-width:18px;text-align:right;">${d.count}</div>
+    </div>`;
+  }).join('')+`</div>`;
+}
+
 // RENDER: MOVIMIENTOS
 // ══════════════════════════════════════
 function limpiarFiltrosMov(){
@@ -2011,15 +2254,13 @@ function renderMovimientos(){
   const rango = document.getElementById('movFiltroRango').value;
   const fecha = document.getElementById('movFiltroFecha').value;
 
-  // Mostrar/ocultar input de fecha exacta
   document.getElementById('movFiltroFecha').style.display = rango==='fecha' ? '' : 'none';
 
-  // Calcular rango de fechas
   const hoy = HOY();
   let desdeF='', hastaF='';
   if(rango==='hoy'){ desdeF=hoy; hastaF=hoy; }
   else if(rango==='semana'){
-    const d=new Date(); d.setDate(d.getDate()-d.getDay()+1); // lunes
+    const d=new Date(); d.setDate(d.getDate()-d.getDay()+1);
     desdeF=d.toISOString().slice(0,10); hastaF=hoy;
   }
   else if(rango==='mes'){ desdeF=hoy.slice(0,7)+'-01'; hastaF=hoy; }
@@ -2037,7 +2278,6 @@ function renderMovimientos(){
   const empty   = document.getElementById('movEmpty');
   const resumen = document.getElementById('movResumen');
 
-  // Resumen cuando hay búsqueda activa
   if(busq && lista.length){
     const entradas = lista.filter(m=>m.cantidad>0);
     const salidas  = lista.filter(m=>m.cantidad<0);
@@ -2055,16 +2295,87 @@ function renderMovimientos(){
 
   if(!lista.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
   empty.style.display='none';
-  tbody.innerHTML = lista.map(m=>`<tr>
-    <td>${m.fecha}<br><span style="font-size:11px;color:#aaa;">${m.hora||''}</span></td>
-    <td><span class="tipo-badge tipo-${m.tipo}">${m.tipo}</span></td>
-    <td>${m.nombre}</td>
-    <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">
-      ${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}
-    </td>
-    <td>${m.concepto||''} ${m.referencia?`<span style="font-size:11px;color:#aaa;">(${m.referencia})</span>`:''}</td>
-    <td>${m.responsable||''}</td>
-  </tr>`).join('');
+
+  // ── Agrupar por día → por ticket ──
+  const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function fmtDia(f){
+    const [y,mo,d] = f.split('-').map(Number);
+    const dt = new Date(y,mo-1,d);
+    return `${DIAS[dt.getDay()]} ${d} de ${MESES[mo-1]}, ${y}`;
+  }
+
+  const dayMap = {}; // fecha → Map(tKey → ticket)
+  lista.forEach(m => {
+    if(!dayMap[m.fecha]) dayMap[m.fecha] = new Map();
+    const tKey = m.referencia || `${m.tipo}_${m.hora||''}_${m.responsable||''}`;
+    if(!dayMap[m.fecha].has(tKey)){
+      dayMap[m.fecha].set(tKey, {
+        tipo: m.tipo, hora: m.hora||'',
+        responsable: m.responsable||'',
+        concepto: m.concepto||'',
+        referencia: m.referencia||'',
+        items: []
+      });
+    }
+    dayMap[m.fecha].get(tKey).items.push(m);
+  });
+
+  const sortedDays = Object.keys(dayMap).sort((a,b)=>b.localeCompare(a));
+  let html = '';
+
+  sortedDays.forEach(fechaDia => {
+    const tickets = [...dayMap[fechaDia].values()];
+    const nMov  = tickets.reduce((s,t)=>s+t.items.length, 0);
+    const nEnt  = tickets.filter(t=>t.tipo==='ENTRADA').length;
+    const nSal  = tickets.filter(t=>['VENTA','MERMA'].includes(t.tipo)).length;
+    const partesDia = [];
+    if(nEnt) partesDia.push(`${nEnt} entrada${nEnt!==1?'s':''}`);
+    if(nSal) partesDia.push(`${nSal} salida${nSal!==1?'s':''}`);
+    if(!partesDia.length) partesDia.push(`${tickets.length} mov.`);
+
+    html += `<tr class="mov-day-row">
+      <td colspan="6">
+        <span class="mov-day-fecha">${fmtDia(fechaDia)}</span>
+        <span class="mov-day-meta">${partesDia.join(' · ')} · ${nMov} ítem${nMov!==1?'s':''}</span>
+      </td>
+    </tr>`;
+
+    tickets.forEach(ticket => {
+      const isMulti = ticket.items.length > 1;
+      const refTag  = ticket.referencia
+        ? `<span class="mov-folio-tag">${ticket.referencia}</span>` : '';
+
+      if(isMulti){
+        html += `<tr class="mov-ticket-hdr">
+          <td class="mov-ticket-hora">${ticket.hora}</td>
+          <td><span class="tipo-badge tipo-${ticket.tipo}">${ticket.tipo}</span></td>
+          <td colspan="2" style="font-weight:600;color:#222;">${ticket.responsable}</td>
+          <td colspan="2" style="font-size:12px;color:#888;">${ticket.concepto} ${refTag}</td>
+        </tr>`;
+        ticket.items.forEach(m => {
+          html += `<tr class="mov-ticket-item">
+            <td></td><td></td>
+            <td class="mov-item-nombre">↳ ${m.nombre}</td>
+            <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
+            <td colspan="2"></td>
+          </tr>`;
+        });
+      } else {
+        const m = ticket.items[0];
+        html += `<tr>
+          <td class="mov-ticket-hora">${m.hora||''}</td>
+          <td><span class="tipo-badge tipo-${m.tipo}">${m.tipo}</span></td>
+          <td>${m.nombre}</td>
+          <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
+          <td style="font-size:12px;color:#666;">${m.concepto||''} ${m.referencia?`<span class="mov-folio-tag">${m.referencia}</span>`:''}</td>
+          <td style="font-size:12px;color:#666;">${m.responsable||''}</td>
+        </tr>`;
+      }
+    });
+  });
+
+  tbody.innerHTML = html;
 }
 
 // ══════════════════════════════════════
@@ -2969,8 +3280,10 @@ async function confirmarEntradaNota(){
   const concepto  = document.getElementById('notaConcepto').value.trim() || 'Entrada por nota de entrega';
   const hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
   const hoy  = HOY();
+  const folio = `NE-${hoy}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
 
   let registrados = 0;
+  const items = [];
   notaItemsParsed.forEach((_,i)=>{
     const insumoId = document.getElementById('notaInsumo_'+i)?.value;
     const cantidad = parseFloat(document.getElementById('notaCant_'+i)?.value)||0;
@@ -2983,17 +3296,16 @@ async function confirmarEntradaNota(){
     const stockAntes = ins.stock;
     ins.stock += cantidad;
 
-    // Actualizar costo del insumo si viene precio en la nota
     if(precio > 0){
       ins.costo = precio;
       ins.ultimaRevisionPrecio = hoy;
-      // Registrar en proveedores del insumo
       if(!ins.proveedores) ins.proveedores = [];
       const prov = ins.proveedores.find(p=>p.nombre===proveedor);
       if(prov){ prov.precio=precio; prov.fecha=hoy; }
       else ins.proveedores.push({nombre:proveedor, precio, fecha:hoy});
     }
 
+    items.push({ insumoId, nombre:ins.nombre, unidad:ins.unidad, cantidad, precioUnit:precio, subtotal:cantidad*precio });
     movimientos.push({
       id: genId('mov'),
       fecha: hoy, hora,
@@ -3002,7 +3314,7 @@ async function confirmarEntradaNota(){
       cantidad, unidad: ins.unidad,
       responsable: proveedor,
       concepto,
-      referencia: '',
+      referencia: folio,
       stockAntes, stockDespues: ins.stock,
     });
     registrados++;
@@ -3010,10 +3322,14 @@ async function confirmarEntradaNota(){
 
   if(!registrados){ toast('No hay items válidos para registrar'); return; }
 
+  const total = items.reduce((s,it)=>s+it.subtotal, 0);
+  ordenes.push({ folio, fecha:hoy, proveedor, items, total, notas:concepto, estado:'recibida', sinDocumento:true });
+
   await guardar();
   cerrarLeerNota();
   renderStock();
   renderMovimientos();
+  renderCompras();
   toast(`Entrada registrada ✓ — ${registrados} insumo${registrados>1?'s':''} actualizados`);
 }
 
@@ -4010,8 +4326,8 @@ function renderCompras(){
   const ordFiltradas = ordenes.filter(o =>
     o.estado === 'recibida' && o.fecha >= desde && o.fecha <= hasta
   );
-  // Folios ya cubiertos por órdenes
-  const foliosCubiertos = new Set(ordFiltradas.map(o => o.folio));
+  // Folios ya cubiertos por órdenes (filtrar string vacío para no bloquear movimientos sin folio)
+  const foliosCubiertos = new Set(ordFiltradas.map(o => o.folio).filter(Boolean));
 
   // ── Fuente 2: movimientos ENTRADA sin orden asociada ──
   // Agrupa por referencia (folio) → sintetiza una "orden virtual"
