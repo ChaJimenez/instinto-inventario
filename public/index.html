@@ -162,6 +162,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
 .dash-bar-lbl{font-size:9px;color:#999;text-align:center;margin-top:3px;line-height:1.3;white-space:nowrap;}
 .dash-legend{display:flex;align-items:center;gap:4px;font-size:11px;color:#888;flex-wrap:wrap;}
 .dash-leg-dot{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:2px;}
+@media(max-width:480px){#dinKpis{grid-template-columns:repeat(2,1fr)!important;}}
 /* ── PROVEEDORES: desplegable ── */
 .dprov-card{border:1px solid #eee;border-radius:9px;overflow:hidden;margin-bottom:7px;background:#fff;}
 .dprov-row{display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;user-select:none;transition:background 0.12s;}
@@ -911,6 +912,27 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarLeerNota()">Cancelar</button>
       <button class="btn btn-primary" id="btnConfirmarNota" style="display:none;" onclick="confirmarEntradaNota()">✓ Registrar entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle de Insumo -->
+<div class="modal-overlay" id="modalDetalleInsumo">
+  <div class="modal modal-lg" style="max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:10px;">
+      <div>
+        <h2 id="dinNombre" style="font-size:17px;margin-bottom:3px;">—</h2>
+        <div id="dinMeta" style="font-size:12px;color:#aaa;"></div>
+      </div>
+      <span id="dinStatusBadge"></span>
+    </div>
+    <div id="dinKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;"></div>
+    <div id="dinRotacion" style="margin-bottom:10px;"></div>
+    <div id="dinChart"    style="margin-bottom:10px;"></div>
+    <div id="dinProvs"    style="margin-bottom:10px;"></div>
+    <div id="dinUltMovs"  style="margin-bottom:4px;"></div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-outline" onclick="cerrarModal('modalDetalleInsumo')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2216,13 +2238,13 @@ function _buildTopInsumos(lista){
   if(!sorted.length) return '<div style="color:#aaa;font-size:13px;padding:12px 0;">Sin movimientos.</div>';
   const mx = sorted[0][1].total;
   return sorted.map(([nom,d])=>`
-    <div style="margin-bottom:10px;">
+    <div style="margin-bottom:10px;cursor:pointer;" onclick="abrirDetalleInsumo('${nom.replace(/'/g,"\\'")}')">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;">
-        <span style="font-size:12px;color:#222;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:66%;">${nom}</span>
+        <span style="font-size:12px;color:#0D2A5E;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:66%;text-decoration:underline dotted #b0c4f5;">${nom}</span>
         <span style="font-size:11px;flex-shrink:0;">${d.ent>0?`<span style="color:#3b6d11;">↑${d.ent}</span> `:''}${d.sal>0?`<span style="color:#e24b4a;">↓${d.sal}</span>`:''}${(!d.ent&&!d.sal)?`<span style="color:#888;">${d.total} mov.</span>`:''}</span>
       </div>
       <div style="height:5px;background:#f0f0f0;border-radius:3px;">
-        <div style="height:5px;background:#0D2A5E;border-radius:3px;width:${Math.round(d.total/mx*100)}%;"></div>
+        <div style="height:5px;background:#0D2A5E;border-radius:3px;width:${Math.round(d.total/mx*100)}%;transition:width .3s;"></div>
       </div>
     </div>`).join('');
 }
@@ -2265,6 +2287,142 @@ function _buildTipoChart(lista){
       <span style="font-size:11px;color:#aaa;min-width:28px;text-align:right;">${Math.round(count/total*100)}%</span>
     </div>`).join('');
   return `<div style="display:flex;align-items:center;gap:14px;">${donut}<div style="flex:1;">${legend}</div></div>`;
+}
+
+// ── Detalle de insumo ──
+function abrirDetalleInsumo(nombre){
+  const hoy   = HOY();
+  const desde = new Date(Date.now() - dashPeriodDias*86400000).toISOString().slice(0,10);
+  const ins   = insumos.find(i=>i.nombre===nombre);
+  const unidad= ins?.unidad || movimientos.find(m=>m.nombre===nombre)?.unidad || '';
+  const costo = ins?.costo || 0;
+
+  const movsPer = movimientos.filter(m=>m.nombre===nombre && m.fecha>=desde && m.fecha<=hoy);
+  const allMovs = [...movimientos].filter(m=>m.nombre===nombre).reverse().slice(0,15);
+
+  const entradas= movsPer.filter(m=>m.tipo==='ENTRADA');
+  const ventas  = movsPer.filter(m=>m.tipo==='VENTA');
+  const mermas  = movsPer.filter(m=>m.tipo==='MERMA');
+  const totalEnt= entradas.reduce((s,m)=>s+m.cantidad,0);
+  const totalVta= ventas.reduce((s,m)=>s+Math.abs(m.cantidad),0);
+  const totalMrm= mermas.reduce((s,m)=>s+Math.abs(m.cantidad),0);
+
+  const stockActual = ins?.stock ?? null;
+  const stockMin    = ins?.stockMin ?? 0;
+
+  // Status badge
+  let sLabel='', sColor='#2d6e2d', sBg='#eaf3de';
+  if(ins){
+    if(stockActual<=0){sLabel='AGOTADO';sColor='#c41e1e';sBg='#ffe8e8';}
+    else if(stockActual<=stockMin&&stockMin>0){sLabel='STOCK BAJO';sColor='#b06800';sBg='#fff8ed';}
+    else sLabel='OK';
+  }
+  document.getElementById('dinNombre').textContent = nombre;
+  document.getElementById('dinMeta').textContent   = `${unidad} · últimos ${dashPeriodDias} días · ${movsPer.length} movimiento${movsPer.length!==1?'s':''}`;
+  const badge = document.getElementById('dinStatusBadge');
+  badge.textContent  = sLabel;
+  badge.style.cssText= sLabel ? `font-size:11px;padding:3px 10px;border-radius:10px;font-weight:700;background:${sBg};color:${sColor};white-space:nowrap;flex-shrink:0;` : '';
+
+  // KPIs
+  const costoValor = ins && costo>0 ? fmtMoney(stockActual*costo) : null;
+  document.getElementById('dinKpis').innerHTML = `
+    <div style="background:#f8f9fb;border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:17px;font-weight:700;color:#0D2A5E;">${ins!=null?fmtNum(stockActual)+' '+unidad:'—'}</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;">Stock actual</div>
+      ${ins&&stockMin>0?`<div style="font-size:10px;color:#bbb;">mín: ${fmtNum(stockMin)} ${unidad}</div>`:''}
+      ${costoValor?`<div style="font-size:10px;color:#0D2A5E;font-weight:600;margin-top:1px;">${costoValor}</div>`:''}
+    </div>
+    <div style="background:#eaf3de;border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:17px;font-weight:700;color:#3b6d11;">+${fmtNum(totalEnt)} ${unidad}</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;">Entradas · ${entradas.length} ticket${entradas.length!==1?'s':''}</div>
+    </div>
+    <div style="background:#fff0f0;border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:17px;font-weight:700;color:#e24b4a;">${totalVta>0?'-'+fmtNum(totalVta)+' '+unidad:'—'}</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;">Ventas · ${ventas.length} mov.</div>
+    </div>
+    <div style="background:${totalMrm>0?'#fff8ed':'#f8f9fb'};border-radius:9px;padding:10px 12px;text-align:center;">
+      <div style="font-size:17px;font-weight:700;color:${totalMrm>0?'#b06800':'#aaa'};">${totalMrm>0?'-'+fmtNum(totalMrm)+' '+unidad:'—'}</div>
+      <div style="font-size:10px;color:#888;margin-top:2px;">Merma · ${mermas.length} mov.</div>
+    </div>`;
+
+  // Rotación
+  if(totalEnt>0){
+    const pct  = Math.min(100, Math.round((totalVta+totalMrm)/totalEnt*100));
+    const col  = pct>90?'#e24b4a':pct>60?'#b06800':'#3b6d11';
+    document.getElementById('dinRotacion').innerHTML = `
+      <div style="background:#fff;border:1px solid #eee;border-radius:9px;padding:12px 14px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px;">
+          <span style="font-weight:600;color:#333;">Rotación del período</span>
+          <span style="font-weight:700;color:${col};">${pct}% consumido</span>
+        </div>
+        <div style="height:7px;background:#f0f0f0;border-radius:4px;overflow:hidden;">
+          <div style="height:7px;background:${col};border-radius:4px;width:${pct}%;transition:width .4s;"></div>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px;">Compraste <strong>${fmtNum(totalEnt)}</strong> · vendiste <strong>${fmtNum(totalVta)}</strong> · merma <strong>${fmtNum(totalMrm)}</strong> ${unidad}</div>
+      </div>`;
+  } else { document.getElementById('dinRotacion').innerHTML=''; }
+
+  // Mini chart diario
+  const MESES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const cDates=[]; let cd=new Date(desde+'T12:00:00');
+  while(cd<=new Date(hoy+'T12:00:00')){ cDates.push(cd.toISOString().slice(0,10)); cd.setDate(cd.getDate()+1); }
+  const cData=cDates.map(f=>({
+    f,
+    ent:movsPer.filter(m=>m.fecha===f&&m.tipo==='ENTRADA').reduce((s,m)=>s+m.cantidad,0),
+    sal:movsPer.filter(m=>m.fecha===f&&['VENTA','MERMA'].includes(m.tipo)).reduce((s,m)=>s+Math.abs(m.cantidad),0),
+  }));
+  const cMax=Math.max(1,...cData.map(d=>Math.max(d.ent,d.sal)));
+  const hasChart=cData.some(d=>d.ent||d.sal);
+  document.getElementById('dinChart').innerHTML = hasChart ? `
+    <div style="background:#fff;border:1px solid #eee;border-radius:9px;padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Actividad diaria</div>
+      <div style="display:flex;align-items:flex-end;gap:2px;overflow-x:auto;">
+        ${cData.map(d=>{
+          const [,mo,dd]=d.f.split('-').map(Number);
+          const hE=d.ent>0?Math.max(4,Math.round(d.ent/cMax*54)):0;
+          const hS=d.sal>0?Math.max(4,Math.round(d.sal/cMax*54)):0;
+          return `<div style="display:flex;flex-direction:column;align-items:center;min-width:20px;flex:1;">
+            <div style="display:flex;align-items:flex-end;gap:1px;height:54px;">
+              ${d.ent>0?`<div style="flex:1;height:${hE}px;background:#3b6d11;border-radius:2px 2px 0 0;" title="+${fmtNum(d.ent)} ${unidad}"></div>`:'<div style="flex:1"></div>'}
+              ${d.sal>0?`<div style="flex:1;height:${hS}px;background:#e24b4a;border-radius:2px 2px 0 0;" title="-${fmtNum(d.sal)} ${unidad}"></div>`:'<div style="flex:1"></div>'}
+            </div>
+            <div style="font-size:8px;color:#bbb;margin-top:2px;">${parseInt(dd)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  // Proveedores
+  const pMap={};
+  entradas.forEach(m=>{ const p=m.responsable||'—'; if(!pMap[p]) pMap[p]={qty:0,count:0}; pMap[p].qty+=m.cantidad; pMap[p].count++; });
+  const pList=Object.entries(pMap).sort((a,b)=>b[1].qty-a[1].qty);
+  document.getElementById('dinProvs').innerHTML = pList.length ? `
+    <div style="background:#fff;border:1px solid #eee;border-radius:9px;padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Proveedores del período</div>
+      ${pList.map(([prov,d])=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f8f8f8;">
+          <span style="font-size:13px;color:#333;">${prov}</span>
+          <span style="font-size:12px;color:#3b6d11;font-weight:600;">+${fmtNum(d.qty)} ${unidad} · ${d.count} entrega${d.count!==1?'s':''}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  // Últimos movimientos
+  document.getElementById('dinUltMovs').innerHTML = allMovs.length ? `
+    <div style="background:#fff;border:1px solid #eee;border-radius:9px;overflow:hidden;">
+      <div style="padding:11px 14px 7px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">Últimos movimientos</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <tbody>
+          ${allMovs.map(m=>`<tr style="border-top:1px solid #f5f5f5;">
+            <td style="padding:7px 14px;color:#888;white-space:nowrap;">${m.fecha} <span style="color:#ccc;font-size:10px;">${m.hora||''}</span></td>
+            <td style="padding:7px 8px;"><span class="tipo-badge tipo-${m.tipo}">${m.tipo}</span></td>
+            <td style="padding:7px 8px;text-align:right;font-weight:600;color:${m.cantidad>0?'#3b6d11':'#e24b4a'};">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
+            <td style="padding:7px 14px;color:#aaa;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.responsable||'—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : '';
+
+  abrirModal('modalDetalleInsumo');
 }
 
 // ── Edición de proveedores (admin) ──
@@ -2373,7 +2531,7 @@ function _buildProveedores(entradas){
 
     const rows=tickets.map(t=>{
       const [,tmo,tdd]=t.fecha.split('-').map(Number);
-      const prods=t.items.map(i=>`<span style="display:inline-block;margin-right:6px;">${i.nombre} <strong style="color:#3b6d11;">+${fmtNum(i.cantidad)} ${i.unidad}</strong></span>`).join('');
+      const prods=t.items.map(i=>`<span style="display:inline-block;margin-right:6px;"><span onclick="event.stopPropagation();abrirDetalleInsumo('${i.nombre.replace(/'/g,"\\'")}');" style="cursor:pointer;color:#0D2A5E;text-decoration:underline dotted #b0c4f5;">${i.nombre}</span> <strong style="color:#3b6d11;">+${fmtNum(i.cantidad)} ${i.unidad}</strong></span>`).join('');
       const folioTag=t.folio?`<span class="dprov-hist-folio">${t.folio}</span>`:'';
       return `<tr>
         <td style="white-space:nowrap;color:#555;">${parseInt(tdd)} ${MESES_C[tmo-1]}</td>
@@ -2539,7 +2697,7 @@ function renderMovimientos(){
         ticket.items.forEach(m => {
           html += `<tr class="mov-ticket-item">
             <td></td><td></td>
-            <td class="mov-item-nombre">↳ ${m.nombre}</td>
+            <td class="mov-item-nombre">↳ <span onclick="abrirDetalleInsumo('${m.nombre.replace(/'/g,"\\'")}');event.stopPropagation();" style="cursor:pointer;color:#0D2A5E;text-decoration:underline dotted #b0c4f5;">${m.nombre}</span></td>
             <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
             <td colspan="2"></td>
           </tr>`;
@@ -2549,7 +2707,7 @@ function renderMovimientos(){
         html += `<tr>
           <td class="mov-ticket-hora">${m.hora||''}</td>
           <td><span class="tipo-badge tipo-${m.tipo}">${m.tipo}</span></td>
-          <td>${m.nombre}</td>
+          <td><span onclick="abrirDetalleInsumo('${m.nombre.replace(/'/g,"\\'")}');event.stopPropagation();" style="cursor:pointer;color:#0D2A5E;text-decoration:underline dotted #b0c4f5;">${m.nombre}</span></td>
           <td class="mov-cantidad ${m.cantidad<0?'neg':'pos'}" style="text-align:right;">${m.cantidad>0?'+':''}${fmtNum(m.cantidad)} ${m.unidad}</td>
           <td style="font-size:12px;color:#666;">${m.concepto||''} ${m.referencia?`<span class="mov-folio-tag">${m.referencia}</span>`:''}</td>
           <td style="font-size:12px;color:#666;">${m.responsable||''}</td>
