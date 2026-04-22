@@ -2523,23 +2523,25 @@ function _buildProveedores(entradas){
     const ult=[...d.fechas].sort().reverse()[0];
     const [,mo,dd]=ult.split('-').map(Number);
 
-    // Agrupar movimientos por ticket (folio o fecha+hora+responsable)
-    const tMap={};
+    // Agrupar por producto: totalizar cantidad y registrar fechas
+    const pMap={};
     d.movs.forEach(m=>{
-      const key=m.referencia||`${m.fecha}_${m.hora||''}_${m.responsable||''}`;
-      if(!tMap[key]) tMap[key]={fecha:m.fecha,folio:m.referencia||'',concepto:m.concepto||'',items:[]};
-      tMap[key].items.push(m);
+      if(!pMap[m.nombre]) pMap[m.nombre]={total:0,unidad:m.unidad||'',compras:0,fechas:[]};
+      pMap[m.nombre].total+=m.cantidad;
+      pMap[m.nombre].compras++;
+      pMap[m.nombre].fechas.push(m.fecha);
     });
-    const tickets=Object.values(tMap).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+    const prodList=Object.entries(pMap).sort((a,b)=>b[1].total-a[1].total);
 
-    const rows=tickets.map(t=>{
-      const [,tmo,tdd]=t.fecha.split('-').map(Number);
-      const prods=t.items.map(i=>`<span style="display:inline-block;margin-right:6px;"><span onclick="event.stopPropagation();abrirDetalleInsumo('${i.nombre.replace(/'/g,"\\'")}');" style="cursor:pointer;color:#0D2A5E;text-decoration:underline dotted #b0c4f5;">${i.nombre}</span> <strong style="color:#3b6d11;">+${fmtNum(i.cantidad)} ${i.unidad}</strong></span>`).join('');
-      const folioTag=t.folio?`<span class="dprov-hist-folio">${t.folio}</span>`:'';
+    const rows=prodList.map(([pnom,pd])=>{
+      const ultF=[...pd.fechas].sort().reverse()[0];
+      const [,pmo,pdd]=ultF.split('-').map(Number);
+      const safe=pnom.replace(/'/g,"\\'");
       return `<tr>
-        <td style="white-space:nowrap;color:#555;">${parseInt(tdd)} ${MESES_C[tmo-1]}</td>
-        <td>${folioTag}<span style="font-size:11px;color:#aaa;margin-left:${t.folio?4:0}px;">${t.folio?'':t.concepto||'—'}</span></td>
-        <td class="dprov-hist-prod">${prods}</td>
+        <td><span onclick="event.stopPropagation();abrirDetalleInsumo('${safe}');" style="cursor:pointer;color:#0D2A5E;font-weight:600;text-decoration:underline dotted #b0c4f5;">${pnom}</span></td>
+        <td style="color:#3b6d11;font-weight:700;white-space:nowrap;">+${fmtNum(pd.total)} ${pd.unidad}</td>
+        <td style="color:#888;font-size:11px;white-space:nowrap;">${pd.compras}×</td>
+        <td style="color:#888;font-size:11px;white-space:nowrap;">${parseInt(pdd)} ${MESES_C[pmo-1]}</td>
       </tr>`;
     }).join('');
 
@@ -2564,7 +2566,7 @@ function _buildProveedores(entradas){
       <div class="dprov-hist" id="${hid}">
         <table>
           <thead><tr>
-            <th>Fecha</th><th>Folio / Concepto</th><th>Productos</th>
+            <th>Producto</th><th>Total recibido</th><th>Compras</th><th>Última</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>
