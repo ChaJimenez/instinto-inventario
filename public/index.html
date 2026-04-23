@@ -913,6 +913,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
         <input type="text" id="notaProveedor" placeholder="Nombre del proveedor">
       </div>
       <div class="form-row">
+        <label>Fecha de entrada</label>
+        <input type="date" id="notaFechaEntrada">
+      </div>
+      <div class="form-row">
         <label>Concepto</label>
         <input type="text" id="notaConcepto" placeholder="Entrega semanal, compra mercado, etc.">
       </div>
@@ -3539,6 +3543,7 @@ function abrirLeerNota(){
   document.getElementById('btnConfirmarNota').style.display='none';
   document.getElementById('notaFoto').value='';
   document.getElementById('notaProveedor').value='';
+  document.getElementById('notaFechaEntrada').value=HOY();
   document.getElementById('notaConcepto').value='';
   notaItemsParsed=[];
   abrirModal('modalLeerNota');
@@ -3666,7 +3671,8 @@ async function confirmarEntradaNota(){
   const proveedor = document.getElementById('notaProveedor').value.trim() || 'Proveedor (nota)';
   const concepto  = document.getElementById('notaConcepto').value.trim() || 'Entrada por nota de entrega';
   const hora = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
-  const hoy  = HOY();
+  const hoyCaptura = HOY();
+  const hoy = document.getElementById('notaFechaEntrada').value || hoyCaptura;
   const folio = `NE-${hoy}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
 
   let registrados = 0;
@@ -3695,7 +3701,7 @@ async function confirmarEntradaNota(){
     items.push({ insumoId, nombre:ins.nombre, unidad:ins.unidad, cantidad, precioUnit:precio, subtotal:cantidad*precio });
     movimientos.push({
       id: genId('mov'),
-      fecha: hoy, fechaCaptura: hoy, hora,
+      fecha: hoy, fechaCaptura: hoyCaptura, hora,
       tipo: 'ENTRADA',
       insumoId, nombre: ins.nombre,
       cantidad, unidad: ins.unidad,
