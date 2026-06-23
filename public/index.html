@@ -373,6 +373,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:#f5f5f3;min-heigh
     <button class="btn btn-primary btn-sm" onclick="abrirCorte()">Ejecutar corte →</button>
   </div>
 
+  <!-- Banner Sin Receta: platillos del POS sin receta mapeada -->
+  <div id="sinRecetaBanner" class="ventas-banner hidden" style="background:#fff8e1;border-color:#f59e0b;flex-direction:column;align-items:flex-start;gap:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <div style="font-size:13px;font-weight:700;color:#92400e;">⚠️ Platillos sin receta — el auto-corte no puede descontarlos</div>
+      <button onclick="document.getElementById('sinRecetaBanner').classList.add('hidden')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#92400e;padding:0 4px;">✕</button>
+    </div>
+    <div id="sinRecetaLista" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    <div style="font-size:11px;color:#92400e;">Ve a <strong>Recetario</strong> y agrega estos platillos con sus ingredientes para que el sistema descuente inventario correctamente.</div>
+  </div>
+
   <!-- Banner Toteat: días sin PDF -->
   <div id="toteatBanner" class="ventas-banner hidden" style="background:#fff0f0;border-color:#e24b4a;flex-direction:column;align-items:flex-start;gap:8px;">
     <div style="font-size:13px;font-weight:600;color:#c41e1e;">⚠️ Días de Toteat sin PDF</div>
@@ -5018,6 +5028,16 @@ function abrirVentasPDFConFecha(fecha){
 }
 
 // ── Auto-corte: procesa días del POS pendientes al cargar ──
+function mostrarBannerSinReceta(platillos){
+  const banner = document.getElementById('sinRecetaBanner');
+  const lista  = document.getElementById('sinRecetaLista');
+  if(!banner || !lista || !platillos.length) return;
+  lista.innerHTML = platillos.map(p =>
+    `<span style="background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;color:#92400e;">${p}</span>`
+  ).join('');
+  banner.classList.remove('hidden');
+}
+
 async function autoCorte(){
   try {
     const r = await fetch('/api/auto-corte', { method:'POST',
@@ -5031,6 +5051,7 @@ async function autoCorte(){
       const fechasStr = d.fechas.join(', ');
       toast(`Auto-corte POS: ${d.cortesRealizados} día${d.cortesRealizados>1?'s':''} procesado${d.cortesRealizados>1?'s':''} (${fechasStr})`);
     }
+    if(d.sinReceta && d.sinReceta.length) mostrarBannerSinReceta(d.sinReceta);
     // Actualizar banner ventas pendientes
     cargarStockLive();
   } catch(_){}

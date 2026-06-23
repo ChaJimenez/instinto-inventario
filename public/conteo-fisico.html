@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conteo Físico — INSTINTO</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --naranja: #E85D04;
+    --negro: #1a1a1a;
+    --gris: #4b5563;
+    --gris-claro: #f3f4f6;
+    --borde: #e5e7eb;
+    --amarillo-bajo: #fef9c3;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+    color: var(--negro);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .page {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 24px 28px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--naranja);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .header-left h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--negro);
+  }
+  .header-left h1 span { color: var(--naranja); }
+  .header-left p {
+    font-size: 12px;
+    color: var(--gris);
+    margin-top: 2px;
+  }
+  .header-right {
+    text-align: right;
+    font-size: 12px;
+    color: var(--gris);
+  }
+  .header-right strong { font-size: 14px; color: var(--negro); }
+
+  /* META FIELDS */
+  .meta-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    background: var(--gris-claro);
+    border-radius: 10px;
+  }
+  .meta-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gris);
+    margin-bottom: 4px;
+  }
+  .meta-field .line {
+    height: 26px;
+    border-bottom: 1.5px solid #9ca3af;
+    width: 100%;
+  }
+
+  /* CATEGORY HEADER */
+  .cat-header {
+    background: var(--negro);
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 6px 10px;
+    margin-top: 16px;
+    margin-bottom: 0;
+    border-radius: 6px 6px 0 0;
+  }
+  .cat-header.naranja { background: var(--naranja); }
+  .cat-header.gris    { background: #374151; }
+
+  /* TABLE */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+  }
+  table th {
+    background: #f9fafb;
+    border: 1px solid var(--borde);
+    padding: 6px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--gris);
+    text-align: left;
+  }
+  table th.center { text-align: center; }
+  table td {
+    border: 1px solid var(--borde);
+    padding: 7px 8px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  table td.unidad { color: var(--gris); font-size: 11px; text-align: center; }
+  table td.input-cell { background: var(--amarillo-bajo); min-width: 70px; }
+  table td.obs-cell   { background: #f9fafb; min-width: 120px; }
+  tr:nth-child(even) td { background: #fafafa; }
+  tr:nth-child(even) td.input-cell { background: #fef9c3; }
+  .blank-row td { color: #d1d5db; font-style: italic; }
+  .blank-row td.input-cell { background: var(--amarillo-bajo); }
+
+  /* TOTALS ROW */
+  .totals-section {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .totals-box {
+    border: 1.5px solid var(--borde);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .totals-box label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gris);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .totals-box .line {
+    height: 26px;
+    border-bottom: 1.5px solid #9ca3af;
+  }
+
+  /* FIRMAS */
+  .firmas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--borde);
+  }
+  .firma-box {
+    text-align: center;
+  }
+  .firma-box .linea-firma {
+    height: 50px;
+    border-bottom: 1.5px solid var(--negro);
+    margin-bottom: 6px;
+  }
+  .firma-box label {
+    font-size: 11px;
+    color: var(--gris);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 10px;
+    color: #9ca3af;
+    padding-top: 10px;
+    border-top: 1px solid var(--borde);
+  }
+
+  /* INSTRUCCIONES (solo pantalla) */
+  .instrucciones {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #1e40af;
+  }
+  .instrucciones strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+  /* BOTÓN IMPRIMIR */
+  .btn-print {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--naranja);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 20px;
+  }
+  .btn-print:hover { background: #c84e00; }
+
+  @media print {
+    .instrucciones, .btn-print { display: none; }
+    body { font-size: 12px; }
+    .page { padding: 12px 16px; }
+    .header { padding-bottom: 10px; margin-bottom: 12px; }
+    .meta-row { padding: 10px 12px; margin-bottom: 14px; }
+    .cat-header { margin-top: 12px; }
+    table td { padding: 5px 6px; }
+    .firmas { margin-top: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Botón imprimir (solo pantalla) -->
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir formato</button>
+
+  <!-- Instrucciones (solo pantalla) -->
+  <div class="instrucciones">
+    <strong>Cómo usar este formato</strong>
+    1. Imprime este documento y distribúyelo a los responsables de cada área.<br>
+    2. Llenar <strong>Cantidad</strong> con el número real que encuentren físicamente.<br>
+    3. Llenar <strong>Costo Unit.</strong> si lo saben (se puede completar después).<br>
+    4. Anotar cualquier observación relevante (caducidad, calidad, etc.).<br>
+    5. Firmar al terminar y entregar al encargado de inventario para capturarlo en el sistema.
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>INSTINTO <span>▪</span> Conteo Físico</h1>
+      <p>Formato de inventario inicial · Operadora Chapa</p>
+    </div>
+    <div class="header-right">
+      <strong id="fechaHoy"></strong><br>
+      Folio: _______________
+    </div>
+  </div>
+
+  <!-- META FIELDS -->
+  <div class="meta-row">
+    <div class="meta-field">
+      <label>Responsable del conteo</label>
+      <div class="line"></div>
+    </div>
+    <div class="meta-field">
+      <label>Turno / Hora inicio</label>
+      <div class="line"></div>
+    </div>
+    <div class="meta-field">
+      <label>Hora de cierre del conteo</label>
+      <div class="line"></div>
+    </div>
+  </div>
+
+  <!-- ── CARNES Y PROTEÍNAS ── -->
+  <div class="cat-header naranja">🥩 Carnes y Proteínas</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Carne molida res (patty crudo)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Carne molida res (patty congelado)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Pollo (pechuga / muslo)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Tocino / Bacon</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Salchicha / Hot dog</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── PAN Y BASES ── -->
+  <div class="cat-header">🍞 Pan y Bases</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Pan brioche</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Pan de semilla</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Pan pretzel</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Pan artesanal (otro)</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── QUESOS Y LÁCTEOS ── -->
+  <div class="cat-header">🧀 Quesos y Lácteos</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Queso americano (rebanadas)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Queso manchego</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Queso gouda</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Queso panela</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Crema</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── VERDURAS Y FRESCOS ── -->
+  <div class="cat-header naranja">🥗 Verduras y Frescos</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Lechuga (romana / iceberg)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Jitomate</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Cebolla blanca</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Cebolla morada</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Aguacate</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Pepinillo en vinagre</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Jalapeño</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Chile serrano</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Limón</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── SALSAS Y CONDIMENTOS ── -->
+  <div class="cat-header">🫙 Salsas y Condimentos</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Catsup</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Mayonesa</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Mostaza</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Salsa BBQ</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Sriracha / Valentina</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Salsa de la casa (preparada)</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Aderezo ranch / especial</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Mantequilla</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── PAPAS Y FREIDORA ── -->
+  <div class="cat-header naranja">🍟 Papas y Freidora</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Papa para freír (fresca)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Papa para freír (congelada)</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Aceite vegetal (freidora)</td><td class="unidad">litro</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Sazonador para papas</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── CONDIMENTOS SECOS ── -->
+  <div class="cat-header">🧂 Condimentos Secos y Limpieza de Línea</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Sal</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Pimienta negra</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Ajo en polvo</td><td class="unidad">kg</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── EMPAQUE Y DESECHABLES ── -->
+  <div class="cat-header">📦 Empaque y Desechables</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Charola / Bandeja</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Papel kraft / manteca</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Papel para hamburguesa</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Vasos (chico / mediano / grande)</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Tapas de vasos</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Popotes</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Bolsas para delivery</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Servilletas</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Guantes (caja)</td><td class="unidad">cajas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- ── BEBIDAS ── -->
+  <div class="cat-header naranja">🥤 Bebidas</div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:35%">Insumo</th>
+        <th class="center" style="width:10%">Unidad</th>
+        <th class="center" style="width:14%">Cantidad</th>
+        <th class="center" style="width:14%">Costo Unit.</th>
+        <th style="width:27%">Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Coca-Cola 355ml</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Coca-Cola 600ml</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Sprite / Fresca</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Agua natural 500ml</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr><td>Cerveza</td><td class="unidad">pzas</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+      <tr class="blank-row"><td>___________________________</td><td class="unidad">_____</td><td class="input-cell"></td><td class="input-cell"></td><td class="obs-cell"></td></tr>
+    </tbody>
+  </table>
+
+  <!-- TOTALES Y OBSERVACIONES -->
+  <div class="totals-section" style="margin-top:20px;">
+    <div class="totals-box">
+      <label>Total de insumos contados</label>
+      <div class="line"></div>
+    </div>
+    <div class="totals-box">
+      <label>Valor estimado del inventario ($)</label>
+      <div class="line"></div>
+    </div>
+    <div class="totals-box">
+      <label>Observaciones generales</label>
+      <div class="line"></div>
+    </div>
+  </div>
+
+  <!-- FIRMAS -->
+  <div class="firmas">
+    <div class="firma-box">
+      <div class="linea-firma"></div>
+      <label>Responsable del Conteo</label>
+    </div>
+    <div class="firma-box">
+      <div class="linea-firma"></div>
+      <label>Gerente que Valida</label>
+    </div>
+  </div>
+
+  <div class="footer">
+    INSTINTO Hamburguesas · Operadora Chapa · Formato de Inventario Inicial · Generado con sistema interno
+  </div>
+
+</div>
+
+<script>
+  document.getElementById('fechaHoy').textContent =
+    new Date().toLocaleDateString('es-MX', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+</script>
+</body>
+</html>

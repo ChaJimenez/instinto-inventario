@@ -444,8 +444,8 @@ app.post('/api/leer-nota', async (req, res) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 1024,
+        model: 'claude-sonnet-4-6',
+        max_tokens: 4096,
         messages: [{
           role: 'user',
           content: [
@@ -495,6 +495,9 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional ni markdown:
     const d = await r.json();
     if (!r.ok) return res.status(500).json({ error: d.error?.message || 'Error al llamar Anthropic API' });
 
+    if (d.stop_reason === 'max_tokens') {
+      return res.status(500).json({ error: 'La nota tiene demasiados productos. Intenta con una foto de la mitad de la nota.' });
+    }
     const texto = d.content?.[0]?.text || '';
     const jsonMatch = texto.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return res.status(500).json({ error: 'No se pudo extraer datos de la nota. Intenta con una foto más clara.' });
@@ -526,7 +529,7 @@ app.post('/api/leer-ventas-pdf', async (req, res) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2048,
         messages: [{
           role: 'user',
@@ -593,7 +596,7 @@ app.post('/api/leer-recetario-pdf', async (req, res) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4096,
         messages: [{
           role: 'user',
@@ -669,7 +672,7 @@ app.post('/api/leer-conteo-fisico-pdf', async (req, res) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-sonnet-4-6',
         max_tokens: 4096,
         messages: [{
           role: 'user',
@@ -789,6 +792,8 @@ app.post('/api/auto-corte', async (req, res) => {
     const insMap = {};
     (insumosRaw || []).forEach(ins => { insMap[ins.id] = { ...ins }; });
 
+    const globalSinReceta = new Set();
+
     for (const fecha of fechasPendientes) {
       const ventasHoy   = ventasPorFecha[fecha];
       const descuentos  = {};
@@ -829,6 +834,7 @@ app.post('/api/auto-corte', async (req, res) => {
         });
       });
 
+      sinReceta.forEach(p => globalSinReceta.add(p));
       cortes.push({
         fecha,
         procesadoEn: new Date().toISOString(),
@@ -847,7 +853,7 @@ app.post('/api/auto-corte', async (req, res) => {
       kv.set(K.ts,          Date.now()),
     ]);
 
-    res.json({ ok: true, cortesRealizados: fechasPendientes.length, fechas: fechasPendientes });
+    res.json({ ok: true, cortesRealizados: fechasPendientes.length, fechas: fechasPendientes, sinReceta: [...globalSinReceta] });
   } catch (e) {
     console.error('/api/auto-corte', e);
     res.status(500).json({ error: e.message });
